@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, MessageCircle, Calendar, Wrench, User } from "lucide-react"
+import { Home, MessageCircle, FileText, User, Building2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export default function MobileNav() {
@@ -9,9 +9,9 @@ export default function MobileNav() {
 
   const navItems = [
     { href: "/", label: "Home", icon: Home },
-    { href: "/hot-takes", label: "Hot Takes", icon: MessageCircle },
-    { href: "/protests", label: "Protests", icon: Calendar },
-    { href: "/toolbox", label: "Toolbox", icon: Wrench },
+    { href: "/threads", label: "Threads", icon: MessageCircle },
+    { href: "/legislation", label: "Bills", icon: FileText },
+    { href: "/organizations", label: "Orgs", icon: Building2 },
     { href: "/profile", label: "Profile", icon: User },
   ]
 
@@ -26,7 +26,7 @@ export default function MobileNav() {
               href={item.href}
               className={cn(
                 "flex flex-col items-center py-2 px-3 rounded-lg transition-colors",
-                isActive ? "text-neon-purple neon-glow" : "text-gray-400 hover:text-white",
+                isActive ? "text-advoline-orange text-glow" : "text-gray-400 hover:text-white",
               )}
             >
               <item.icon className="h-5 w-5 mb-1" />

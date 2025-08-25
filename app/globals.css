@@ -68,33 +68,33 @@
   }
 }
 
-/* Neon glow effects */
+/* Neon glow effects - reduced intensity */
 .neon-glow {
-  text-shadow: 0 0 5px #d946ef, 0 0 10px #d946ef, 0 0 15px #d946ef, 0 0 20px #d946ef;
+  text-shadow: 0 0 3px #d946ef, 0 0 6px #d946ef, 0 0 9px #d946ef;
 }
 
 .neon-glow-strong {
-  text-shadow: 0 0 5px #f472b6, 0 0 10px #f472b6, 0 0 15px #f472b6, 0 0 20px #f472b6, 0 0 35px #f472b6, 0 0 40px #f472b6;
+  text-shadow: 0 0 4px #f472b6, 0 0 8px #f472b6, 0 0 12px #f472b6, 0 0 16px #f472b6;
 }
 
 .neon-border {
   border: 1px solid #d946ef;
-  box-shadow: 0 0 5px #d946ef, inset 0 0 5px #d946ef;
+  box-shadow: 0 0 3px #d946ef, inset 0 0 3px #d946ef;
 }
 
 .neon-button {
   background: linear-gradient(45deg, #d946ef, #f472b6);
-  box-shadow: 0 0 10px #d946ef, 0 0 20px #d946ef, 0 0 30px #d946ef;
+  box-shadow: 0 0 6px #d946ef, 0 0 12px #d946ef, 0 0 18px #d946ef;
   transition: all 0.3s ease;
 }
 
 .neon-button:hover {
-  box-shadow: 0 0 15px #f472b6, 0 0 25px #f472b6, 0 0 35px #f472b6, 0 0 45px #f472b6;
+  box-shadow: 0 0 8px #f472b6, 0 0 16px #f472b6, 0 0 24px #f472b6;
   transform: translateY(-2px);
 }
 
 .text-glow {
-  text-shadow: 0 0 10px currentColor;
+  text-shadow: 0 0 6px currentColor;
 }
 
 /* Font weight utilities */
