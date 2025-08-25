@@ -1,21 +1,21 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Menu, X, LogOut } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { useAuth } from "@/components/auth/auth-provider"
-import AuthModal from "@/components/auth/auth-modal"
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Menu, X, LogOut } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/components/auth/auth-provider";
+import AuthModal from "@/components/auth/auth-modal";
 
 export default function Header() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [authModalOpen, setAuthModalOpen] = useState(false)
-  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin")
-  const pathname = usePathname()
-  const { user, profile, signOut } = useAuth()
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const pathname = usePathname();
+  const { user, profile, signOut } = useAuth();
 
   const navItems = [
     { href: "/", label: "Home" },
@@ -23,12 +23,12 @@ export default function Header() {
     { href: "/legislation", label: "Legislation Feed" },
     { href: "/organizations", label: "Organizations" },
     { href: "/profile", label: "Profile" },
-  ]
+  ];
 
   const handleAuthClick = (mode: "signin" | "signup") => {
-    setAuthMode(mode)
-    setAuthModalOpen(true)
-  }
+    setAuthMode(mode);
+    setAuthModalOpen(true);
+  };
 
   return (
     <>
@@ -37,8 +37,10 @@ export default function Header() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-3">
-              <div className="text-2xl font-black text-advoline-orange">ADVOLINE</div>
-              <div className="hidden sm:block text-sm text-white font-light neon-glow tracking-wide">
+              <div className="text-2xl font-black text-advoline-orange">
+                ADVOLINE
+              </div>
+              <div className="hidden sm:block text-sm text-neon-purple font-light neon-glow tracking-wide">
                 Your Pipeline to Advocacy
               </div>
             </Link>
@@ -50,8 +52,10 @@ export default function Header() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "text-sm font-medium transition-colors hover:text-advoline-orange hover:text-glow",
-                    pathname === item.href ? "text-advoline-orange text-glow" : "text-gray-300",
+                    "text-sm font-medium transition-colors hover:text-advoline-orange",
+                    pathname === item.href
+                      ? "text-advoline-orange"
+                      : "text-gray-300"
                   )}
                 >
                   {item.label}
@@ -65,13 +69,21 @@ export default function Header() {
                 <div className="flex items-center space-x-3">
                   <Link href="/profile">
                     <Avatar className="h-8 w-8 cursor-pointer">
-                      <AvatarImage src={profile?.avatar_url || "/placeholder.svg"} />
+                      <AvatarImage
+                        src={profile?.avatar_url || "/placeholder.svg"}
+                      />
                       <AvatarFallback className="bg-advoline-orange text-black font-bold">
-                        {profile?.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase()}
+                        {profile?.username?.[0]?.toUpperCase() ||
+                          user.email?.[0]?.toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                   </Link>
-                  <Button variant="ghost" size="sm" onClick={signOut} className="text-gray-400 hover:text-white">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={signOut}
+                    className="text-gray-400 hover:text-white"
+                  >
                     <LogOut className="h-4 w-4" />
                   </Button>
                 </div>
@@ -90,7 +102,7 @@ export default function Header() {
                     onClick={() => handleAuthClick("signup")}
                     className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold"
                   >
-                    Start For Free
+                    Sign Up
                   </Button>
                 </div>
               )}
@@ -103,7 +115,11 @@ export default function Header() {
               className="md:hidden text-white"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {isMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
             </Button>
           </div>
 
@@ -116,8 +132,10 @@ export default function Header() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "text-sm font-medium transition-colors hover:text-advoline-orange hover:text-glow",
-                      pathname === item.href ? "text-advoline-orange text-glow" : "text-gray-300",
+                      "text-sm font-medium transition-colors hover:text-advoline-orange",
+                      pathname === item.href
+                        ? "text-advoline-orange"
+                        : "text-gray-300"
                     )}
                     onClick={() => setIsMenuOpen(false)}
                   >
@@ -139,7 +157,7 @@ export default function Header() {
                       onClick={() => handleAuthClick("signup")}
                       className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold"
                     >
-                      Start For Free
+                      Sign Up
                     </Button>
                   </div>
                 )}
@@ -156,5 +174,5 @@ export default function Header() {
         onModeChange={setAuthMode}
       />
     </>
-  )
+  );
 }
