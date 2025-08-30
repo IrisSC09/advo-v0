@@ -1,6 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { generateText } from "ai"
-import { google } from "@ai-sdk/google"
 
 interface BillDetail {
   bill_id: number
@@ -16,12 +14,48 @@ interface BillDetail {
   full_text?: string
   committee?: string
   next_action?: string
-  ai_summary?: {
-    summary: string
-    keyPoints: string[]
-    impact: string
-    controversialAspects: string
-  }
+  sponsors?: Array<{
+    name: string
+    party: string
+    role: string
+  }>
+  subjects?: string[]
+  history?: Array<{
+    date: string
+    action: string
+    chamber: string
+  }>
+  votes?: Array<{
+    roll_call_id: number
+    date: string
+    description: string
+    chamber: string
+    yea: number
+    nay: number
+    nv: number
+    absent: number
+    total: number
+    passed: boolean
+  }>
+  texts?: Array<{
+    doc_id: number
+    type: string
+    mime: string
+    url: string
+    date: string
+  }>
+  amendments?: Array<{
+    amendment_id: number
+    title: string
+    description: string
+    adopted: boolean
+  }>
+  supplements?: Array<{
+    supplement_id: number
+    title: string
+    type: string
+    date: string
+  }>
 }
 
 async function fetchBillFromLegiScan(billId: string): Promise<BillDetail | null> {
@@ -42,20 +76,92 @@ async function fetchBillFromLegiScan(billId: string): Promise<BillDetail | null>
       return null
     }
 
+    // Process sponsors
+    const sponsors = bill.sponsors
+      ? Object.values(bill.sponsors).map((sponsor: any) => ({
+          name: sponsor.name || "Unknown",
+          party: sponsor.party || "Unknown",
+          role: sponsor.role || "Sponsor",
+        }))
+      : []
+
+    // Process history
+    const history = bill.history
+      ? Object.values(bill.history).map((item: any) => ({
+          date: item.date || "",
+          action: item.action || "",
+          chamber: item.chamber || "",
+        }))
+      : []
+
+    // Process votes
+    const votes = bill.votes
+      ? Object.values(bill.votes).map((vote: any) => ({
+          roll_call_id: vote.roll_call_id || 0,
+          date: vote.date || "",
+          description: vote.desc || "",
+          chamber: vote.chamber || "",
+          yea: vote.yea || 0,
+          nay: vote.nay || 0,
+          nv: vote.nv || 0,
+          absent: vote.absent || 0,
+          total: vote.total || 0,
+          passed: vote.passed === 1,
+        }))
+      : []
+
+    // Process texts
+    const texts = bill.texts
+      ? Object.values(bill.texts).map((text: any) => ({
+          doc_id: text.doc_id || 0,
+          type: text.type || "",
+          mime: text.mime || "",
+          url: text.url || "",
+          date: text.date || "",
+        }))
+      : []
+
+    // Process amendments
+    const amendments = bill.amendments
+      ? Object.values(bill.amendments).map((amendment: any) => ({
+          amendment_id: amendment.amendment_id || 0,
+          title: amendment.title || "",
+          description: amendment.description || "",
+          adopted: amendment.adopted === 1,
+        }))
+      : []
+
+    // Process supplements
+    const supplements = bill.supplements
+      ? Object.values(bill.supplements).map((supplement: any) => ({
+          supplement_id: supplement.supplement_id || 0,
+          title: supplement.title || "",
+          type: supplement.type || "",
+          date: supplement.date || "",
+        }))
+      : []
+
     return {
       bill_id: bill.bill_id,
       title: bill.title || "Untitled Bill",
       description: bill.description || bill.summary || "No description available",
       introduced_date: bill.introduced || "2024-01-01",
-      sponsor_name: bill.sponsors?.[0]?.name || "Unknown Sponsor",
+      sponsor_name: sponsors[0]?.name || "Unknown Sponsor",
       state: bill.state || "US",
       bill_number: bill.bill_number || `BILL-${bill.bill_id}`,
       status: bill.status_desc || "Unknown",
-      party: inferPartyFromSponsor(bill.sponsors?.[0]?.name || ""),
+      party: sponsors[0]?.party || inferPartyFromSponsor(sponsors[0]?.name || ""),
       topic: inferTopicFromTitle(bill.title || ""),
-      full_text: bill.texts?.[0]?.doc || "",
+      full_text: texts[0]?.url || "",
       committee: bill.committee?.name || "Unknown Committee",
-      next_action: bill.history?.[0]?.action || "No upcoming actions",
+      next_action: history[0]?.action || "No upcoming actions",
+      sponsors,
+      subjects: bill.subjects ? Object.values(bill.subjects).map((s: any) => s.subject_name) : [],
+      history,
+      votes,
+      texts,
+      amendments,
+      supplements,
     }
   } catch (error) {
     console.error("Error fetching bill from LegiScan:", error)
@@ -86,64 +192,6 @@ function inferTopicFromTitle(title: string): string {
   return "Other"
 }
 
-async function generateAISummary(bill: BillDetail): Promise<BillDetail["ai_summary"]> {
-  try {
-    const prompt = `Analyze this legislation and provide a comprehensive summary:
-
-Title: ${bill.title}
-Description: ${bill.description}
-Sponsor: ${bill.sponsor_name}
-Status: ${bill.status}
-
-Please provide:
-1. A clear, concise summary (2-3 sentences)
-2. 3-5 key points or provisions
-3. Potential impact on citizens
-4. Any controversial or notable aspects
-
-Format your response as JSON with the following structure:
-{
-  "summary": "...",
-  "keyPoints": ["...", "...", "..."],
-  "impact": "...",
-  "controversialAspects": "..."
-}`
-
-    const { text } = await generateText({
-      model: google("gemini-1.5-flash"),
-      prompt,
-      maxTokens: 1000,
-    })
-
-    // Try to parse the JSON response
-    try {
-      const parsed = JSON.parse(text)
-      return {
-        summary: parsed.summary || "AI summary unavailable",
-        keyPoints: Array.isArray(parsed.keyPoints) ? parsed.keyPoints : ["Key points unavailable"],
-        impact: parsed.impact || "Impact analysis unavailable",
-        controversialAspects: parsed.controversialAspects || "No notable aspects identified",
-      }
-    } catch (parseError) {
-      // If JSON parsing fails, create a basic summary from the text
-      return {
-        summary: text.substring(0, 300) + "...",
-        keyPoints: ["AI analysis available in summary"],
-        impact: "Detailed impact analysis in progress",
-        controversialAspects: "Analysis pending",
-      }
-    }
-  } catch (error) {
-    console.error("Error generating AI summary:", error)
-    return {
-      summary: "AI summary temporarily unavailable",
-      keyPoints: ["Summary generation in progress"],
-      impact: "Impact analysis pending",
-      controversialAspects: "Analysis unavailable",
-    }
-  }
-}
-
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const bill = await fetchBillFromLegiScan(params.id)
@@ -151,10 +199,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     if (!bill) {
       return NextResponse.json({ error: "Bill not found" }, { status: 404 })
     }
-
-    // Generate AI summary
-    const aiSummary = await generateAISummary(bill)
-    bill.ai_summary = aiSummary
 
     return NextResponse.json(bill)
   } catch (error) {
