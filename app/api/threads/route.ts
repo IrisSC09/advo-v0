@@ -3,8 +3,9 @@ import { createClient } from "@supabase/supabase-js"
 
 // Create Supabase client for server-side operations
 function createServerClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+  const supabaseUrl = "https://mweaqdserejokxniakyn.supabase.co"
+  const supabaseServiceKey =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13ZWFxZHNlcmVqb2t4bmlha3luIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjA3MzM1NSwiZXhwIjoyMDcxNjQ5MzU1fQ.L2mLPEm4VSlWP8LlOli0FF67yqqhl3nIxHzEJtMRixU"
 
   return createClient(supabaseUrl, supabaseServiceKey, {
     auth: {
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (profileError || !profile) {
-      console.error("Profile not found or error:", profileError)
+      console.error("Profile not found, creating new profile:", profileError)
 
       // Create a basic profile if it doesn't exist
       const { error: createProfileError } = await supabase.from("profiles").insert([
@@ -115,6 +116,7 @@ export async function POST(request: NextRequest) {
       shares_count: 0,
       comments_count: 0,
       external_bill_reference: true,
+      is_trending: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
