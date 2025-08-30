@@ -71,8 +71,3 @@ export async function searchBills(query: string, page = 1, perPage = 20): Promis
     return [];
   }
 }
-
-
-
-
-
