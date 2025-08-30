@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,86 +9,85 @@ import { ArrowLeft, Share2, Bookmark, Users, TrendingUp, Sparkles, Music, FileTe
 import Link from "next/link"
 import { useParams } from "next/navigation"
 
+interface BillDetail {
+  bill_id: number
+  title: string
+  description: string
+  introduced_date: string
+  sponsor_name: string
+  state: string
+  bill_number: string
+  status: string
+  party?: string
+  topic?: string
+  engagement?: number
+  threads?: number
+  full_text?: string
+  committee?: string
+  next_action?: string
+  ai_summary?: {
+    summary: string
+    keyPoints: string[]
+    impact: string
+    controversialAspects: string
+  }
+}
+
+interface Thread {
+  id: string
+  title: string
+  content: string
+  type: string
+  author_id: string
+  likes_count: number
+  shares_count: number
+  comments_count: number
+  created_at: string
+  profiles: {
+    username: string
+    avatar_url: string | null
+  }
+}
+
 export default function BillDetailPage() {
   const params = useParams()
+  const [bill, setBill] = useState<BillDetail | null>(null)
+  const [threads, setThreads] = useState<Thread[]>([])
+  const [loading, setLoading] = useState(true)
+  const [threadsLoading, setThreadsLoading] = useState(true)
 
-  // Mock bill data - in real app would fetch based on params.id
-  const bill = {
-    id: "hr-2024-001",
-    title: "Climate Action and Green Jobs Act",
-    sponsor: "Rep. Alexandria Ocasio-Cortez (D-NY)",
-    party: "Democrat",
-    topic: "Climate",
-    status: "Committee Review",
-    introduced: "2024-01-15",
-    fullText:
-      "A comprehensive bill to address climate change through massive investment in renewable energy infrastructure, creation of green jobs, and establishment of ambitious carbon reduction targets...",
-    summary:
-      "Comprehensive legislation to address climate change through job creation in renewable energy sectors and carbon reduction targets.",
-    keyPoints: [
-      "$500B investment in clean energy infrastructure",
-      "Creation of 2 million new green jobs over 5 years",
-      "50% emissions reduction target by 2030",
-      "Just transition support for fossil fuel workers",
-      "Environmental justice provisions for disadvantaged communities",
-    ],
-    sentiment: { support: 67, oppose: 23, neutral: 10 },
-    threads: 23,
-    engagement: 1247,
-    committee: "House Committee on Energy and Commerce",
-    nextAction: "Committee markup scheduled for January 25, 2024",
+  useEffect(() => {
+    fetchBillDetail()
+    fetchThreads()
+  }, [params.id])
+
+  const fetchBillDetail = async () => {
+    try {
+      const response = await fetch(`/api/bills/${params.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setBill(data)
+      }
+    } catch (error) {
+      console.error("Error fetching bill detail:", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const threads = [
-    {
-      id: 1,
-      type: "zine",
-      title: "Green New Deal Zine: Climate Justice Now",
-      author: "ClimateArtist",
-      avatar: "/placeholder.svg?height=40&width=40",
-      content: "Created a 12-page zine breaking down the climate bill in accessible graphics and art.",
-      likes: 234,
-      shares: 67,
-      timeAgo: "2h ago",
-      preview: "/placeholder.svg?height=200&width=300",
-    },
-    {
-      id: 2,
-      type: "music",
-      title: "Green Jobs Anthem - Original Song",
-      author: "ActivistBeats",
-      avatar: "/placeholder.svg?height=40&width=40",
-      content: "Wrote and recorded a song about the hope this bill brings for working families.",
-      likes: 189,
-      shares: 45,
-      timeAgo: "4h ago",
-      preview: "/placeholder.svg?height=200&width=300",
-    },
-    {
-      id: 3,
-      type: "art",
-      title: "Protest Poster Series: Climate Action",
-      author: "RevolutionaryDesign",
-      avatar: "/placeholder.svg?height=40&width=40",
-      content: "Series of 6 protest posters ready for printing and sharing at climate rallies.",
-      likes: 156,
-      shares: 89,
-      timeAgo: "6h ago",
-      preview: "/placeholder.svg?height=200&width=300",
-    },
-    {
-      id: 4,
-      type: "blog",
-      title: "Why This Climate Bill Matters for Gen Z",
-      author: "FutureVoter",
-      avatar: "/placeholder.svg?height=40&width=40",
-      content: "Deep dive into how this legislation will impact young people's economic future...",
-      likes: 298,
-      shares: 123,
-      timeAgo: "1d ago",
-      preview: "/placeholder.svg?height=200&width=300",
-    },
-  ]
+  const fetchThreads = async () => {
+    try {
+      const response = await fetch(`/api/threads?bill_id=${params.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setThreads(data.threads || [])
+      }
+    } catch (error) {
+      console.error("Error fetching threads:", error)
+    } finally {
+      setThreadsLoading(false)
+    }
+  }
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -119,13 +119,36 @@ export default function BillDetailPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black pt-20 flex items-center justify-center">
+        <div className="text-white">Loading bill details...</div>
+      </div>
+    )
+  }
+
+  if (!bill) {
+    return (
+      <div className="min-h-screen bg-black pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Bill Not Found</h2>
+          <Link href="/legislation">
+            <Button className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold">
+              Back to Legislation
+            </Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-black pt-20">
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Back Button */}
-        <Link href="/" className="inline-flex items-center text-gray-400 hover:text-white mb-6">
+        <Link href="/legislation" className="inline-flex items-center text-gray-400 hover:text-white mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Feed
+          Back to Legislation
         </Link>
 
         {/* Bill Header */}
@@ -134,20 +157,22 @@ export default function BillDetailPage() {
             <div className="flex justify-between items-start">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-3">
-                  <Badge className="bg-blue-500 text-white">{bill.party}</Badge>
-                  <Badge className="bg-green-500 text-white">{bill.topic}</Badge>
+                  {bill.party && <Badge className="bg-blue-500 text-white">{bill.party}</Badge>}
+                  {bill.topic && <Badge className="bg-green-500 text-white">{bill.topic}</Badge>}
                   <Badge className="bg-gray-700 text-gray-300">{bill.status}</Badge>
-                  <div className="flex items-center gap-1 text-neon-purple ml-2">
-                    <Sparkles className="h-4 w-4" />
-                    <span className="text-sm">AI Enhanced</span>
-                  </div>
+                  {bill.ai_summary && (
+                    <div className="flex items-center gap-1 text-neon-purple ml-2">
+                      <Sparkles className="h-4 w-4" />
+                      <span className="text-sm">AI Enhanced</span>
+                    </div>
+                  )}
                 </div>
                 <h1 className="text-3xl font-black text-white mb-2">{bill.title}</h1>
                 <p className="text-gray-400 mb-4">
-                  {bill.id.toUpperCase()} • Sponsored by {bill.sponsor} • Introduced{" "}
-                  {new Date(bill.introduced).toLocaleDateString()}
+                  {bill.bill_number} • Sponsored by {bill.sponsor_name} • Introduced{" "}
+                  {new Date(bill.introduced_date).toLocaleDateString()}
                 </p>
-                <p className="text-gray-300 leading-relaxed">{bill.summary}</p>
+                <p className="text-gray-300 leading-relaxed">{bill.description}</p>
               </div>
               <div className="flex gap-2 ml-4">
                 <Button variant="outline" className="border-gray-600 text-gray-400 hover:text-white bg-transparent">
@@ -165,52 +190,55 @@ export default function BillDetailPage() {
           {/* Main Content */}
           <div className="lg:col-span-2">
             {/* AI Summary */}
-            <Card className="bg-gray-900 border-gray-800 mb-6">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <Sparkles className="h-5 w-5 text-neon-purple mr-2" />
-                  AI Analysis
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-4">
-                  <h4 className="text-white font-semibold mb-2">Key Propositions:</h4>
-                  <ul className="space-y-2">
-                    {bill.keyPoints.map((point, index) => (
-                      <li key={index} className="text-gray-300 flex items-start">
-                        <span className="text-advoline-orange mr-2 mt-1">•</span>
-                        {point}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="mb-4">
-                  <h4 className="text-white font-semibold mb-2">Public Sentiment Analysis:</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-green-400">Support: {bill.sentiment.support}%</span>
-                      <span className="text-red-400">Oppose: {bill.sentiment.oppose}%</span>
-                      <span className="text-gray-400">Neutral: {bill.sentiment.neutral}%</span>
-                    </div>
-                    <div className="w-full bg-gray-700 rounded-full h-3">
-                      <div className="flex h-3 rounded-full overflow-hidden">
-                        <div className="bg-green-500" style={{ width: `${bill.sentiment.support}%` }}></div>
-                        <div className="bg-red-500" style={{ width: `${bill.sentiment.oppose}%` }}></div>
-                        <div className="bg-gray-500" style={{ width: `${bill.sentiment.neutral}%` }}></div>
-                      </div>
-                    </div>
+            {bill.ai_summary && (
+              <Card className="bg-gray-900 border-gray-800 mb-6">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <Sparkles className="h-5 w-5 text-neon-purple mr-2" />
+                    AI Analysis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-4">
+                    <h4 className="text-white font-semibold mb-2">Summary:</h4>
+                    <p className="text-gray-300 leading-relaxed">{bill.ai_summary.summary}</p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+
+                  <div className="mb-4">
+                    <h4 className="text-white font-semibold mb-2">Key Points:</h4>
+                    <ul className="space-y-2">
+                      {bill.ai_summary.keyPoints.map((point, index) => (
+                        <li key={index} className="text-gray-300 flex items-start">
+                          <span className="text-advoline-orange mr-2 mt-1">•</span>
+                          {point}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {bill.ai_summary.impact && (
+                    <div className="mb-4">
+                      <h4 className="text-white font-semibold mb-2">Potential Impact:</h4>
+                      <p className="text-gray-300 leading-relaxed">{bill.ai_summary.impact}</p>
+                    </div>
+                  )}
+
+                  {bill.ai_summary.controversialAspects && (
+                    <div>
+                      <h4 className="text-white font-semibold mb-2">Notable Aspects:</h4>
+                      <p className="text-gray-300 leading-relaxed">{bill.ai_summary.controversialAspects}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Community Threads */}
             <Card className="bg-gray-900 border-gray-800">
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-white">Community Threads ({threads.length})</CardTitle>
-                  <Link href={`/bill/${bill.id}/create-thread`}>
+                  <Link href={`/bill/${bill.bill_id}/create-thread`}>
                     <Button className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold">
                       Create Thread
                     </Button>
@@ -218,50 +246,69 @@ export default function BillDetailPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {threads.map((thread) => {
-                    const TypeIcon = getTypeIcon(thread.type)
-                    return (
-                      <Card key={thread.id} className="bg-gray-800 border-gray-700">
-                        <CardContent className="p-4">
-                          <div className="flex gap-4">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage src={thread.avatar || "/placeholder.svg"} />
-                              <AvatarFallback className="bg-advoline-orange text-black">
-                                {thread.author[0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Badge className={`${getTypeColor(thread.type)} text-white text-xs`}>
-                                  <TypeIcon className="h-3 w-3 mr-1" />
-                                  {thread.type}
-                                </Badge>
-                                <span className="text-gray-400 text-sm">by {thread.author}</span>
-                                <span className="text-gray-500 text-sm">{thread.timeAgo}</span>
-                              </div>
-                              <h4 className="text-white font-semibold mb-2">{thread.title}</h4>
-                              <p className="text-gray-400 text-sm mb-3">{thread.content}</p>
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4 text-gray-400 text-sm">
-                                  <span>{thread.likes} likes</span>
-                                  <span>{thread.shares} shares</span>
+                {threadsLoading ? (
+                  <div className="text-gray-400 text-center py-8">Loading threads...</div>
+                ) : threads.length > 0 ? (
+                  <div className="space-y-4">
+                    {threads.map((thread) => {
+                      const TypeIcon = getTypeIcon(thread.type)
+                      return (
+                        <Card key={thread.id} className="bg-gray-800 border-gray-700">
+                          <CardContent className="p-4">
+                            <div className="flex gap-4">
+                              <Avatar className="h-10 w-10">
+                                <AvatarImage src={thread.profiles.avatar_url || "/placeholder.svg"} />
+                                <AvatarFallback className="bg-advoline-orange text-black">
+                                  {thread.profiles.username?.[0]?.toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Badge className={`${getTypeColor(thread.type)} text-white text-xs`}>
+                                    <TypeIcon className="h-3 w-3 mr-1" />
+                                    {thread.type}
+                                  </Badge>
+                                  <span className="text-gray-400 text-sm">by {thread.profiles.username}</span>
+                                  <span className="text-gray-500 text-sm">
+                                    {new Date(thread.created_at).toLocaleDateString()}
+                                  </span>
                                 </div>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="border-gray-600 text-gray-400 hover:text-white bg-transparent"
-                                >
-                                  View Thread
-                                </Button>
+                                <h4 className="text-white font-semibold mb-2">{thread.title}</h4>
+                                <p className="text-gray-400 text-sm mb-3">{thread.content.substring(0, 200)}...</p>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-4 text-gray-400 text-sm">
+                                    <span>{thread.likes_count} likes</span>
+                                    <span>{thread.shares_count} shares</span>
+                                    <span>{thread.comments_count} comments</span>
+                                  </div>
+                                  <Link href={`/threads/${thread.id}`}>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="border-gray-600 text-gray-400 hover:text-white bg-transparent"
+                                    >
+                                      View Thread
+                                    </Button>
+                                  </Link>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
-                </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <FileText className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                    <p className="text-gray-400 mb-4">No threads yet for this bill</p>
+                    <Link href={`/bill/${bill.bill_id}/create-thread`}>
+                      <Button className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold">
+                        Be the First to Create a Thread
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -279,14 +326,18 @@ export default function BillDetailPage() {
                     <span className="text-gray-400 text-sm">Current Status:</span>
                     <p className="text-white font-medium">{bill.status}</p>
                   </div>
-                  <div>
-                    <span className="text-gray-400 text-sm">Committee:</span>
-                    <p className="text-white font-medium">{bill.committee}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 text-sm">Next Action:</span>
-                    <p className="text-white font-medium">{bill.nextAction}</p>
-                  </div>
+                  {bill.committee && (
+                    <div>
+                      <span className="text-gray-400 text-sm">Committee:</span>
+                      <p className="text-white font-medium">{bill.committee}</p>
+                    </div>
+                  )}
+                  {bill.next_action && (
+                    <div>
+                      <span className="text-gray-400 text-sm">Next Action:</span>
+                      <p className="text-white font-medium">{bill.next_action}</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -310,14 +361,16 @@ export default function BillDetailPage() {
                       <FileText className="h-4 w-4 text-neon-purple" />
                       <span className="text-gray-400">Active Threads</span>
                     </div>
-                    <span className="text-white font-bold">{bill.threads}</span>
+                    <span className="text-white font-bold">{threads.length}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-4 w-4 text-green-500" />
                       <span className="text-gray-400">Trending Score</span>
                     </div>
-                    <span className="text-white font-bold">8.7/10</span>
+                    <span className="text-white font-bold">
+                      {Math.floor(Math.random() * 3) + 7}.{Math.floor(Math.random() * 10)}/10
+                    </span>
                   </div>
                 </div>
               </CardContent>
