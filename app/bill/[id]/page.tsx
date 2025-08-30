@@ -21,6 +21,9 @@ import {
   FileEdit,
   Plus,
   ExternalLink,
+  Copy,
+  Check,
+  X,
 } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
@@ -111,6 +114,9 @@ export default function BillDetailPage() {
   const [threads, setThreads] = useState<Thread[]>([])
   const [loading, setLoading] = useState(true)
   const [threadsLoading, setThreadsLoading] = useState(true)
+  const [showAllSponsors, setShowAllSponsors] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     fetchBillDetail()
@@ -191,6 +197,28 @@ export default function BillDetailPage() {
     }
   }
 
+  const getSubjectColor = (subject: string, index: number) => {
+    const colors = [
+      "bg-blue-500",
+      "bg-green-500",
+      "bg-purple-500",
+      "bg-red-500",
+      "bg-yellow-500",
+      "bg-pink-500",
+      "bg-indigo-500",
+      "bg-orange-500",
+      "bg-teal-500",
+      "bg-cyan-500",
+    ]
+
+    // Use a simple hash function to consistently assign colors based on subject name
+    let hash = 0
+    for (let i = 0; i < subject.length; i++) {
+      hash = subject.charCodeAt(i) + ((hash << 5) - hash)
+    }
+    return colors[Math.abs(hash) % colors.length]
+  }
+
   const formatChamber = (chamber: string) => {
     switch (chamber?.toLowerCase()) {
       case "s":
@@ -202,6 +230,60 @@ export default function BillDetailPage() {
       default:
         return chamber
     }
+  }
+
+  const handleCopyLink = async () => {
+    const url = window.location.href
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (error) {
+      console.error("Failed to copy link:", error)
+    }
+  }
+
+  const ShareModal = () => {
+    if (!showShareModal) return null
+
+    return (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <Card className="bg-gray-900 border-gray-800 w-full max-w-md">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white">Share Bill</CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowShareModal(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <label className="text-white text-sm font-medium mb-2 block">Share Link</label>
+                <div className="flex gap-2">
+                  <div className="flex-1 p-2 bg-gray-800 rounded border border-gray-700 text-gray-300 text-sm break-all">
+                    {window.location.href}
+                  </div>
+                  <Button
+                    onClick={handleCopyLink}
+                    className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold"
+                  >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                {copied && <p className="text-green-400 text-sm mt-1">Link copied to clipboard!</p>}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   if (loading) {
@@ -228,6 +310,8 @@ export default function BillDetailPage() {
   }
 
   const latestHistoryItem = bill.history?.[0]
+  const displayedSponsors = showAllSponsors ? bill.sponsors : bill.sponsors?.slice(0, 3)
+  const hasMoreSponsors = bill.sponsors && bill.sponsors.length > 3
 
   return (
     <div className="min-h-screen bg-black pt-20">
@@ -250,8 +334,12 @@ export default function BillDetailPage() {
                       {bill.sponsors[0].party}
                     </Badge>
                   )}
-                  {/* Show first subject as primary topic */}
-                  {bill.subjects?.[0] && <Badge className="bg-neon-purple text-white">{bill.subjects[0]}</Badge>}
+                  {/* Show subjects with different colors */}
+                  {bill.subjects?.slice(0, 3).map((subject, index) => (
+                    <Badge key={index} className={`${getSubjectColor(subject, index)} text-white`}>
+                      {subject}
+                    </Badge>
+                  ))}
                   <Badge className="bg-gray-700 text-gray-300">{bill.status}</Badge>
                 </div>
                 <h1 className="text-3xl font-black text-white mb-2">{bill.title}</h1>
@@ -265,7 +353,11 @@ export default function BillDetailPage() {
                 <Button variant="outline" className="border-gray-600 text-gray-400 hover:text-white bg-transparent">
                   <Bookmark className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" className="border-gray-600 text-gray-400 hover:text-white bg-transparent">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowShareModal(true)}
+                  className="border-gray-600 text-gray-400 hover:text-white bg-transparent"
+                >
                   <Share2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -329,7 +421,7 @@ export default function BillDetailPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
-                        {bill.sponsors.map((sponsor, index) => (
+                        {displayedSponsors?.map((sponsor, index) => (
                           <div key={index} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
                             <div>
                               <p className="text-white font-medium">{sponsor.name}</p>
@@ -340,6 +432,15 @@ export default function BillDetailPage() {
                             )}
                           </div>
                         ))}
+                        {hasMoreSponsors && !showAllSponsors && (
+                          <Button
+                            onClick={() => setShowAllSponsors(true)}
+                            variant="outline"
+                            className="w-full border-gray-600 text-gray-400 hover:text-white bg-transparent"
+                          >
+                            Load More Sponsors ({bill.sponsors.length - 3} more)
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -667,20 +768,20 @@ export default function BillDetailPage() {
                 <CardTitle className="text-white">Take Action</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold">
-                  Contact Your Rep
-                </Button>
-                <Button className="w-full neon-button text-black font-bold">Share on Social</Button>
-                <Button
-                  className="w-full border-gray-600 text-gray-400 hover:text-white bg-transparent"
-                  variant="outline"
-                >
-                  Find Local Events
+                <Link href={`/bill/${bill.bill_id}/create-thread`}>
+                  <Button className="w-full bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold">
+                    Create Thread
+                  </Button>
+                </Link>
+                <Button onClick={() => setShowShareModal(true)} className="w-full neon-button text-black font-bold">
+                  Share on Social
                 </Button>
               </CardContent>
             </Card>
           </div>
         </div>
+
+        <ShareModal />
       </div>
     </div>
   )
