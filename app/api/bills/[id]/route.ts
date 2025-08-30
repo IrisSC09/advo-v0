@@ -9,9 +9,11 @@ interface BillDetail {
   state: string
   bill_number: string
   status: string
-  party?: string
-  topic?: string
-  full_text?: string
+  status_date?: string
+  progress?: Array<{
+    date: string
+    event: string
+  }>
   committee?: string
   next_action?: string
   sponsors?: Array<{
@@ -85,6 +87,14 @@ async function fetchBillFromLegiScan(billId: string): Promise<BillDetail | null>
       ? Object.values(bill.subjects).map((subject: any) => subject.subject_name || subject)
       : []
 
+    // Process progress events
+    const progress = bill.progress
+      ? Object.values(bill.progress).map((event: any) => ({
+          date: event.date || "",
+          event: event.event || "",
+        }))
+      : []
+
     return {
       bill_id: bill.bill_id,
       title: bill.title || "Untitled Bill",
@@ -93,12 +103,11 @@ async function fetchBillFromLegiScan(billId: string): Promise<BillDetail | null>
       sponsor_name: bill.sponsors?.[0]?.name || "Unknown Sponsor",
       state: bill.state || "US",
       bill_number: bill.bill_number || `BILL-${bill.bill_id}`,
-      status: bill.status_desc || "Unknown",
-      party: inferPartyFromSponsor(bill.sponsors?.[0]?.name || ""),
-      topic: inferTopicFromTitle(bill.title || ""),
-      full_text: bill.texts?.[0]?.doc || "",
-      committee: bill.committee?.name || "Unknown Committee",
-      next_action: bill.history?.[0]?.action || "No upcoming actions",
+      status: bill.status_desc || bill.status || "Unknown Status",
+      status_date: bill.status_date || "",
+      progress,
+      committee: bill.committee?.name || "",
+      next_action: bill.history?.[0]?.action || "",
       sponsors: bill.sponsors || [],
       subjects,
       history: bill.history || [],
@@ -109,25 +118,6 @@ async function fetchBillFromLegiScan(billId: string): Promise<BillDetail | null>
     }
   } catch (error) {
     console.error("Error fetching bill from LegiScan:", error)
-    return null
-  }
-}
-
-async function fetchBillText(docId: string): Promise<string | null> {
-  const apiKey = "d0db0d79caefbd288452efcea05eca71"
-
-  try {
-    const url = `https://api.legiscan.com/?key=${apiKey}&op=getBillText&id=${docId}`
-    const response = await fetch(url)
-
-    if (!response.ok) {
-      throw new Error(`LegiScan API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return data.text?.doc || null
-  } catch (error) {
-    console.error("Error fetching bill text:", error)
     return null
   }
 }
@@ -189,44 +179,15 @@ async function fetchRollCall(rollCallId: string): Promise<any | null> {
   }
 }
 
-function inferPartyFromSponsor(sponsorName: string): string {
-  const name = sponsorName.toLowerCase()
-  if (name.includes("(d-") || name.includes("democrat")) return "Democrat"
-  if (name.includes("(r-") || name.includes("republican")) return "Republican"
-  if (name.includes("(i-") || name.includes("independent")) return "Independent"
-  return "Unknown"
-}
-
-function inferTopicFromTitle(title: string): string {
-  const titleLower = title.toLowerCase()
-  if (titleLower.includes("climate") || titleLower.includes("environment") || titleLower.includes("green"))
-    return "Climate"
-  if (titleLower.includes("immigration") || titleLower.includes("border")) return "Immigration"
-  if (titleLower.includes("education") || titleLower.includes("student") || titleLower.includes("school"))
-    return "Education"
-  if (titleLower.includes("health") || titleLower.includes("medical")) return "Healthcare"
-  if (titleLower.includes("economic") || titleLower.includes("tax") || titleLower.includes("infrastructure"))
-    return "Economics"
-  if (titleLower.includes("defense") || titleLower.includes("military") || titleLower.includes("security"))
-    return "Defense"
-  return "Other"
-}
-
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const searchParams = request.nextUrl.searchParams
   const action = searchParams.get("action")
-  const docId = searchParams.get("doc_id")
   const amendmentId = searchParams.get("amendment_id")
   const supplementId = searchParams.get("supplement_id")
   const rollCallId = searchParams.get("roll_call_id")
 
   try {
     // Handle specific actions
-    if (action === "getBillText" && docId) {
-      const text = await fetchBillText(docId)
-      return NextResponse.json({ text })
-    }
-
     if (action === "getAmendment" && amendmentId) {
       const amendment = await fetchAmendment(amendmentId)
       return NextResponse.json({ amendment })

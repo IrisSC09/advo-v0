@@ -20,6 +20,7 @@ import {
   ScrollText,
   FileEdit,
   Plus,
+  ExternalLink,
 } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
@@ -33,9 +34,11 @@ interface BillDetail {
   state: string
   bill_number: string
   status: string
-  party?: string
-  topic?: string
-  full_text?: string
+  status_date?: string
+  progress?: Array<{
+    date: string
+    event: string
+  }>
   committee?: string
   next_action?: string
   sponsors?: Array<{
@@ -46,7 +49,7 @@ interface BillDetail {
     party: string
     role: string
   }>
-  subjects?: (string | { subject_id: number; subject_name: string })[]
+  subjects?: string[]
   history?: Array<{
     date: string
     action: string
@@ -108,8 +111,6 @@ export default function BillDetailPage() {
   const [threads, setThreads] = useState<Thread[]>([])
   const [loading, setLoading] = useState(true)
   const [threadsLoading, setThreadsLoading] = useState(true)
-  const [selectedText, setSelectedText] = useState<string | null>(null)
-  const [textLoading, setTextLoading] = useState(false)
 
   useEffect(() => {
     fetchBillDetail()
@@ -141,21 +142,6 @@ export default function BillDetailPage() {
       console.error("Error fetching threads:", error)
     } finally {
       setThreadsLoading(false)
-    }
-  }
-
-  const fetchBillText = async (docId: number) => {
-    setTextLoading(true)
-    try {
-      const response = await fetch(`/api/bills/${params.id}?action=getBillText&doc_id=${docId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setSelectedText(data.text)
-      }
-    } catch (error) {
-      console.error("Error fetching bill text:", error)
-    } finally {
-      setTextLoading(false)
     }
   }
 
@@ -243,8 +229,14 @@ export default function BillDetailPage() {
             <div className="flex justify-between items-start">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-3">
-                  {bill.party && <Badge className={`${getPartyColor(bill.party)} text-white`}>{bill.party}</Badge>}
-                  {bill.topic && <Badge className="bg-green-500 text-white">{bill.topic}</Badge>}
+                  {/* Show sponsor party if available */}
+                  {bill.sponsors?.[0]?.party && (
+                    <Badge className={`${getPartyColor(bill.sponsors[0].party)} text-white`}>
+                      {bill.sponsors[0].party}
+                    </Badge>
+                  )}
+                  {/* Show first subject as primary topic */}
+                  {bill.subjects?.[0] && <Badge className="bg-neon-purple text-white">{bill.subjects[0]}</Badge>}
                   <Badge className="bg-gray-700 text-gray-300">{bill.status}</Badge>
                 </div>
                 <h1 className="text-3xl font-black text-white mb-2">{bill.title}</h1>
@@ -311,6 +303,65 @@ export default function BillDetailPage() {
 
               {/* Overview Tab */}
               <TabsContent value="overview" className="space-y-6">
+                {/* Bill Status Details */}
+                <Card className="bg-gray-900 border-gray-800">
+                  <CardHeader>
+                    <CardTitle className="text-white">Current Status</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-gray-400 text-sm">Status:</span>
+                        <p className="text-white font-medium">{bill.status}</p>
+                      </div>
+                      {bill.status_date && (
+                        <div>
+                          <span className="text-gray-400 text-sm">Status Date:</span>
+                          <p className="text-white font-medium">{new Date(bill.status_date).toLocaleDateString()}</p>
+                        </div>
+                      )}
+                      {bill.committee && (
+                        <div>
+                          <span className="text-gray-400 text-sm">Committee:</span>
+                          <p className="text-white font-medium">{bill.committee}</p>
+                        </div>
+                      )}
+                      {bill.next_action && (
+                        <div>
+                          <span className="text-gray-400 text-sm">Next Action:</span>
+                          <p className="text-white font-medium">{bill.next_action}</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Progress Events */}
+                {bill.progress && bill.progress.length > 0 && (
+                  <Card className="bg-gray-900 border-gray-800">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center">
+                        <Calendar className="h-5 w-5 mr-2" />
+                        Progress Timeline
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {bill.progress.slice(0, 10).map((item, index) => (
+                          <div key={index} className="flex gap-4 p-3 bg-gray-800 rounded-lg">
+                            <div className="text-gray-400 text-sm min-w-[100px]">
+                              {new Date(item.date).toLocaleDateString()}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-white">{item.event}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Sponsors */}
                 {bill.sponsors && bill.sponsors.length > 0 && (
                   <Card className="bg-gray-900 border-gray-800">
@@ -328,7 +379,9 @@ export default function BillDetailPage() {
                               <p className="text-white font-medium">{sponsor.name}</p>
                               <p className="text-gray-400 text-sm">{sponsor.role}</p>
                             </div>
-                            <Badge className={`${getPartyColor(sponsor.party)} text-white`}>{sponsor.party}</Badge>
+                            {sponsor.party && (
+                              <Badge className={`${getPartyColor(sponsor.party)} text-white`}>{sponsor.party}</Badge>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -376,7 +429,7 @@ export default function BillDetailPage() {
                             key={index}
                             className="bg-neon-purple/20 text-neon-purple border border-neon-purple/50"
                           >
-                            {typeof subject === "string" ? subject : subject.subject_name || subject}
+                            {subject}
                           </Badge>
                         ))}
                       </div>
@@ -406,23 +459,15 @@ export default function BillDetailPage() {
                               </p>
                             </div>
                             <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => fetchBillText(text.doc_id)}
-                                className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold"
-                                disabled={textLoading}
-                              >
-                                {textLoading ? "Loading..." : "View Text"}
-                              </Button>
                               {text.state_link && (
                                 <Button
                                   size="sm"
-                                  variant="outline"
-                                  className="border-gray-600 text-gray-400 hover:text-white bg-transparent"
+                                  className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold"
                                   asChild
                                 >
                                   <a href={text.state_link} target="_blank" rel="noopener noreferrer">
-                                    Official Link
+                                    View Official Text
+                                    <ExternalLink className="h-3 w-3 ml-1" />
                                   </a>
                                 </Button>
                               )}
@@ -435,20 +480,6 @@ export default function BillDetailPage() {
                     )}
                   </CardContent>
                 </Card>
-
-                {/* Display selected text */}
-                {selectedText && (
-                  <Card className="bg-gray-900 border-gray-800">
-                    <CardHeader>
-                      <CardTitle className="text-white">Bill Text</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="bg-gray-800 p-4 rounded-lg max-h-96 overflow-y-auto">
-                        <pre className="text-gray-300 text-sm whitespace-pre-wrap">{selectedText}</pre>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
               </TabsContent>
 
               {/* Votes Tab */}
@@ -660,6 +691,12 @@ export default function BillDetailPage() {
                     <span className="text-gray-400 text-sm">Current Status:</span>
                     <p className="text-white font-medium">{bill.status}</p>
                   </div>
+                  {bill.status_date && (
+                    <div>
+                      <span className="text-gray-400 text-sm">Status Date:</span>
+                      <p className="text-white font-medium">{new Date(bill.status_date).toLocaleDateString()}</p>
+                    </div>
+                  )}
                   {bill.committee && (
                     <div>
                       <span className="text-gray-400 text-sm">Committee:</span>
