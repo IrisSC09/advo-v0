@@ -1,12 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase-server"
+import { createServerClient } from "@/lib/supabase-server"
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const billId = searchParams.get("bill_id")
 
   try {
-    let query = supabase
+    let query = createServerClient()
       .from("threads")
       .select(`
         *,
@@ -35,11 +35,23 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log("Received thread creation request:", body)
+
     const { title, content, type, bill_id, author_id, tags, file_url, preview_url } = body
 
     if (!title || !content || !type || !bill_id || !author_id) {
+      console.error("Missing required fields:", {
+        title: !!title,
+        content: !!content,
+        type: !!type,
+        bill_id: !!bill_id,
+        author_id: !!author_id,
+      })
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
+
+    // Create the server client for database operations
+    const supabase = createServerClient()
 
     const { data, error } = await supabase
       .from("threads")
@@ -62,13 +74,14 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error("Error creating thread:", error)
-      return NextResponse.json({ error: "Failed to create thread" }, { status: 500 })
+      console.error("Supabase error creating thread:", error)
+      return NextResponse.json({ error: `Failed to create thread: ${error.message}` }, { status: 500 })
     }
 
+    console.log("Thread created successfully:", data)
     return NextResponse.json({ thread: data })
   } catch (error) {
     console.error("Error in thread creation API:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: `Internal server error: ${error.message}` }, { status: 500 })
   }
 }

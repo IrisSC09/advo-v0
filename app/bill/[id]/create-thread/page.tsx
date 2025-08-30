@@ -80,27 +80,39 @@ export default function CreateThreadPage() {
       return
     }
 
+    if (!threadType || !title.trim() || !description.trim()) {
+      alert("Please fill in all required fields")
+      return
+    }
+
     setLoading(true)
     try {
+      const threadData = {
+        title: title.trim(),
+        content: description.trim(),
+        type: threadType,
+        bill_id: params.id as string,
+        author_id: user.id,
+        tags: tags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+        file_url: uploadedFile?.url || null,
+        preview_url: uploadedFile?.fileType.startsWith("image/") ? uploadedFile.url : null,
+      }
+
+      console.log("Submitting thread data:", threadData)
+
       const response = await fetch("/api/threads", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          title,
-          content: description,
-          type: threadType,
-          bill_id: params.id,
-          author_id: user.id,
-          tags: tags
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter(Boolean),
-          file_url: uploadedFile?.url || null,
-          preview_url: uploadedFile?.fileType.startsWith("image/") ? uploadedFile.url : null,
-        }),
+        body: JSON.stringify(threadData),
       })
+
+      const responseData = await response.json()
+      console.log("API response:", responseData)
 
       if (response.ok) {
         setSuccess(true)
@@ -108,11 +120,11 @@ export default function CreateThreadPage() {
           router.push(`/bill/${params.id}`)
         }, 2000)
       } else {
-        throw new Error("Failed to create thread")
+        throw new Error(responseData.error || `HTTP ${response.status}: Failed to create thread`)
       }
     } catch (error) {
       console.error("Error creating thread:", error)
-      alert("Failed to create thread. Please try again.")
+      alert(`Failed to create thread: ${error.message}`)
     } finally {
       setLoading(false)
     }
@@ -313,7 +325,7 @@ export default function CreateThreadPage() {
                 <Button
                   type="submit"
                   className="flex-1 bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold"
-                  disabled={!threadType || !title || !description || loading || uploading}
+                  disabled={!threadType || !title.trim() || !description.trim() || loading || uploading}
                 >
                   {loading ? "Publishing..." : "Publish Thread"}
                 </Button>
