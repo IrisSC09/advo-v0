@@ -11,16 +11,15 @@ import {
   Share2,
   Bookmark,
   Users,
+  Music,
   FileText,
   Palette,
-  Music,
-  ExternalLink,
   Calendar,
   User,
-  Building,
   Vote,
-  FileX,
   ScrollText,
+  FileEdit,
+  Plus,
 } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
@@ -40,7 +39,10 @@ interface BillDetail {
   committee?: string
   next_action?: string
   sponsors?: Array<{
+    people_id: number
     name: string
+    first_name: string
+    last_name: string
     party: string
     role: string
   }>
@@ -53,33 +55,34 @@ interface BillDetail {
   votes?: Array<{
     roll_call_id: number
     date: string
-    description: string
-    chamber: string
+    desc: string
     yea: number
     nay: number
     nv: number
     absent: number
     total: number
-    passed: boolean
+    passed: number
   }>
   texts?: Array<{
     doc_id: number
     type: string
     mime: string
     url: string
-    date: string
+    state_link: string
+    text_size: number
   }>
   amendments?: Array<{
     amendment_id: number
-    title: string
+    chamber: string
+    number: string
     description: string
-    adopted: boolean
+    status: string
   }>
   supplements?: Array<{
     supplement_id: number
-    title: string
     type: string
-    date: string
+    title: string
+    description: string
   }>
 }
 
@@ -105,6 +108,8 @@ export default function BillDetailPage() {
   const [threads, setThreads] = useState<Thread[]>([])
   const [loading, setLoading] = useState(true)
   const [threadsLoading, setThreadsLoading] = useState(true)
+  const [selectedText, setSelectedText] = useState<string | null>(null)
+  const [textLoading, setTextLoading] = useState(false)
 
   useEffect(() => {
     fetchBillDetail()
@@ -136,6 +141,21 @@ export default function BillDetailPage() {
       console.error("Error fetching threads:", error)
     } finally {
       setThreadsLoading(false)
+    }
+  }
+
+  const fetchBillText = async (docId: number) => {
+    setTextLoading(true)
+    try {
+      const response = await fetch(`/api/bills/${params.id}?action=getBillText&doc_id=${docId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setSelectedText(data.text)
+      }
+    } catch (error) {
+      console.error("Error fetching bill text:", error)
+    } finally {
+      setTextLoading(false)
     }
   }
 
@@ -250,345 +270,302 @@ export default function BillDetailPage() {
           {/* Main Content */}
           <div className="lg:col-span-3">
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-6 bg-gray-900 border border-gray-800">
+              <TabsList className="grid w-full grid-cols-6 bg-gray-900 border-gray-800">
                 <TabsTrigger
                   value="overview"
-                  className="text-gray-400 data-[state=active]:text-white data-[state=active]:bg-advoline-orange"
+                  className="text-white data-[state=active]:bg-advoline-orange data-[state=active]:text-black"
                 >
                   Overview
                 </TabsTrigger>
                 <TabsTrigger
-                  value="sponsors"
-                  className="text-gray-400 data-[state=active]:text-white data-[state=active]:bg-advoline-orange"
+                  value="text"
+                  className="text-white data-[state=active]:bg-advoline-orange data-[state=active]:text-black"
                 >
-                  Sponsors
-                </TabsTrigger>
-                <TabsTrigger
-                  value="history"
-                  className="text-gray-400 data-[state=active]:text-white data-[state=active]:bg-advoline-orange"
-                >
-                  History
+                  Text
                 </TabsTrigger>
                 <TabsTrigger
                   value="votes"
-                  className="text-gray-400 data-[state=active]:text-white data-[state=active]:bg-advoline-orange"
+                  className="text-white data-[state=active]:bg-advoline-orange data-[state=active]:text-black"
                 >
                   Votes
                 </TabsTrigger>
                 <TabsTrigger
-                  value="documents"
-                  className="text-gray-400 data-[state=active]:text-white data-[state=active]:bg-advoline-orange"
+                  value="amendments"
+                  className="text-white data-[state=active]:bg-advoline-orange data-[state=active]:text-black"
                 >
-                  Documents
+                  Amendments
+                </TabsTrigger>
+                <TabsTrigger
+                  value="supplements"
+                  className="text-white data-[state=active]:bg-advoline-orange data-[state=active]:text-black"
+                >
+                  Supplements
                 </TabsTrigger>
                 <TabsTrigger
                   value="threads"
-                  className="text-gray-400 data-[state=active]:text-white data-[state=active]:bg-advoline-orange"
+                  className="text-white data-[state=active]:bg-advoline-orange data-[state=active]:text-black"
                 >
-                  Threads
+                  Threads ({threads.length})
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="overview" className="mt-6">
-                <div className="space-y-6">
-                  {/* Subjects */}
-                  {bill.subjects && bill.subjects.length > 0 && (
-                    <Card className="bg-gray-900 border-gray-800">
-                      <CardHeader>
-                        <CardTitle className="text-white">Subjects</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex flex-wrap gap-2">
-                          {bill.subjects.map((subject, index) => (
-                            <Badge
-                              key={index}
-                              className="bg-neon-purple/20 text-neon-purple border border-neon-purple/50"
-                            >
-                              {subject}
-                            </Badge>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Bill Status Details */}
+              {/* Overview Tab */}
+              <TabsContent value="overview" className="space-y-6">
+                {/* Sponsors */}
+                {bill.sponsors && bill.sponsors.length > 0 && (
                   <Card className="bg-gray-900 border-gray-800">
                     <CardHeader>
-                      <CardTitle className="text-white">Current Status</CardTitle>
+                      <CardTitle className="text-white flex items-center">
+                        <User className="h-5 w-5 mr-2" />
+                        Sponsors
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <span className="text-gray-400 text-sm">Status:</span>
-                          <p className="text-white font-medium">{bill.status}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-400 text-sm">Committee:</span>
-                          <p className="text-white font-medium">{bill.committee}</p>
-                        </div>
-                        <div className="md:col-span-2">
-                          <span className="text-gray-400 text-sm">Next Action:</span>
-                          <p className="text-white font-medium">{bill.next_action}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="sponsors" className="mt-6">
-                <Card className="bg-gray-900 border-gray-800">
-                  <CardHeader>
-                    <CardTitle className="text-white">Sponsors & Co-Sponsors</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {bill.sponsors && bill.sponsors.length > 0 ? (
                       <div className="space-y-3">
                         {bill.sponsors.map((sponsor, index) => (
                           <div key={index} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-2">
-                                <User className="h-4 w-4 text-gray-400" />
-                                <span className="text-white font-medium">{sponsor.name}</span>
-                              </div>
-                              <Badge className={`${getPartyColor(sponsor.party)} text-white text-xs`}>
-                                {sponsor.party}
-                              </Badge>
+                            <div>
+                              <p className="text-white font-medium">{sponsor.name}</p>
+                              <p className="text-gray-400 text-sm">{sponsor.role}</p>
                             </div>
-                            <Badge className="bg-gray-700 text-gray-300 text-xs">{sponsor.role}</Badge>
+                            <Badge className={`${getPartyColor(sponsor.party)} text-white`}>{sponsor.party}</Badge>
                           </div>
                         ))}
                       </div>
-                    ) : (
-                      <p className="text-gray-400">No sponsor information available</p>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                    </CardContent>
+                  </Card>
+                )}
 
-              <TabsContent value="history" className="mt-6">
-                <Card className="bg-gray-900 border-gray-800">
-                  <CardHeader>
-                    <CardTitle className="text-white">Legislative History</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {bill.history && bill.history.length > 0 ? (
-                      <div className="space-y-4">
-                        {bill.history.map((item, index) => (
-                          <div key={index} className="flex gap-4 p-4 bg-gray-800 rounded-lg">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <Calendar className="h-4 w-4 text-advoline-orange flex-shrink-0" />
-                              <span className="text-gray-400 text-sm whitespace-nowrap">
-                                {new Date(item.date).toLocaleDateString()}
-                              </span>
+                {/* History */}
+                {bill.history && bill.history.length > 0 && (
+                  <Card className="bg-gray-900 border-gray-800">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center">
+                        <Calendar className="h-5 w-5 mr-2" />
+                        Legislative History
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {bill.history.slice(0, 10).map((item, index) => (
+                          <div key={index} className="flex gap-4 p-3 bg-gray-800 rounded-lg">
+                            <div className="text-gray-400 text-sm min-w-[100px]">
+                              {new Date(item.date).toLocaleDateString()}
                             </div>
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Building className="h-4 w-4 text-neon-purple" />
-                                <span className="text-neon-purple text-sm font-medium">{item.chamber}</span>
-                              </div>
                               <p className="text-white">{item.action}</p>
+                              {item.chamber && <p className="text-gray-400 text-sm">{item.chamber}</p>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Subjects */}
+                {bill.subjects && bill.subjects.length > 0 && (
+                  <Card className="bg-gray-900 border-gray-800">
+                    <CardHeader>
+                      <CardTitle className="text-white">Subjects</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {bill.subjects.map((subject, index) => (
+                          <Badge
+                            key={index}
+                            className="bg-neon-purple/20 text-neon-purple border border-neon-purple/50"
+                          >
+                            {subject}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+
+              {/* Text Tab */}
+              <TabsContent value="text" className="space-y-6">
+                <Card className="bg-gray-900 border-gray-800">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center">
+                      <ScrollText className="h-5 w-5 mr-2" />
+                      Bill Text Versions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {bill.texts && bill.texts.length > 0 ? (
+                      <div className="space-y-3">
+                        {bill.texts.map((text, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                            <div>
+                              <p className="text-white font-medium">{text.type}</p>
+                              <p className="text-gray-400 text-sm">
+                                {text.mime} • {(text.text_size / 1024).toFixed(1)}KB
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => fetchBillText(text.doc_id)}
+                                className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold"
+                                disabled={textLoading}
+                              >
+                                {textLoading ? "Loading..." : "View Text"}
+                              </Button>
+                              {text.state_link && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-gray-600 text-gray-400 hover:text-white bg-transparent"
+                                  asChild
+                                >
+                                  <a href={text.state_link} target="_blank" rel="noopener noreferrer">
+                                    Official Link
+                                  </a>
+                                </Button>
+                              )}
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-gray-400">No history information available</p>
+                      <p className="text-gray-400">No text versions available</p>
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Display selected text */}
+                {selectedText && (
+                  <Card className="bg-gray-900 border-gray-800">
+                    <CardHeader>
+                      <CardTitle className="text-white">Bill Text</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="bg-gray-800 p-4 rounded-lg max-h-96 overflow-y-auto">
+                        <pre className="text-gray-300 text-sm whitespace-pre-wrap">{selectedText}</pre>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
-              <TabsContent value="votes" className="mt-6">
+              {/* Votes Tab */}
+              <TabsContent value="votes" className="space-y-6">
                 <Card className="bg-gray-900 border-gray-800">
                   <CardHeader>
-                    <CardTitle className="text-white">Roll Call Votes</CardTitle>
+                    <CardTitle className="text-white flex items-center">
+                      <Vote className="h-5 w-5 mr-2" />
+                      Roll Call Votes
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {bill.votes && bill.votes.length > 0 ? (
                       <div className="space-y-4">
                         {bill.votes.map((vote, index) => (
                           <div key={index} className="p-4 bg-gray-800 rounded-lg">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <Vote className="h-4 w-4 text-advoline-orange" />
-                                <span className="text-white font-medium">{vote.description}</span>
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <p className="text-white font-medium">{vote.desc}</p>
+                                <p className="text-gray-400 text-sm">{new Date(vote.date).toLocaleDateString()}</p>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <Badge className={vote.passed ? "bg-green-500" : "bg-red-500"}>
-                                  {vote.passed ? "PASSED" : "FAILED"}
-                                </Badge>
-                                <span className="text-gray-400 text-sm">{vote.chamber}</span>
-                              </div>
+                              <Badge className={vote.passed ? "bg-green-500" : "bg-red-500"}>
+                                {vote.passed ? "PASSED" : "FAILED"}
+                              </Badge>
                             </div>
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                              <div className="text-center">
-                                <div className="text-green-500 font-bold text-lg">{vote.yea}</div>
-                                <div className="text-gray-400">Yea</div>
+                            <div className="grid grid-cols-4 gap-4 text-center">
+                              <div>
+                                <p className="text-green-400 font-bold text-lg">{vote.yea}</p>
+                                <p className="text-gray-400 text-sm">Yea</p>
                               </div>
-                              <div className="text-center">
-                                <div className="text-red-500 font-bold text-lg">{vote.nay}</div>
-                                <div className="text-gray-400">Nay</div>
+                              <div>
+                                <p className="text-red-400 font-bold text-lg">{vote.nay}</p>
+                                <p className="text-gray-400 text-sm">Nay</p>
                               </div>
-                              <div className="text-center">
-                                <div className="text-yellow-500 font-bold text-lg">{vote.nv}</div>
-                                <div className="text-gray-400">Not Voting</div>
+                              <div>
+                                <p className="text-gray-400 font-bold text-lg">{vote.nv}</p>
+                                <p className="text-gray-400 text-sm">Not Voting</p>
                               </div>
-                              <div className="text-center">
-                                <div className="text-gray-500 font-bold text-lg">{vote.absent}</div>
-                                <div className="text-gray-400">Absent</div>
+                              <div>
+                                <p className="text-gray-400 font-bold text-lg">{vote.absent}</p>
+                                <p className="text-gray-400 text-sm">Absent</p>
                               </div>
-                              <div className="text-center">
-                                <div className="text-white font-bold text-lg">{vote.total}</div>
-                                <div className="text-gray-400">Total</div>
-                              </div>
-                            </div>
-                            <div className="mt-3 text-right">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-gray-600 text-gray-400 hover:text-white bg-transparent"
-                                onClick={() => window.open(`/api/bills/${vote.roll_call_id}/rollcall`, "_blank")}
-                              >
-                                View Details
-                                <ExternalLink className="h-3 w-3 ml-1" />
-                              </Button>
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-gray-400">No voting records available</p>
+                      <p className="text-gray-400">No votes recorded</p>
                     )}
                   </CardContent>
                 </Card>
               </TabsContent>
 
-              <TabsContent value="documents" className="mt-6">
-                <div className="space-y-6">
-                  {/* Bill Texts */}
-                  {bill.texts && bill.texts.length > 0 && (
-                    <Card className="bg-gray-900 border-gray-800">
-                      <CardHeader>
-                        <CardTitle className="text-white flex items-center">
-                          <FileText className="h-5 w-5 mr-2" />
-                          Bill Texts
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          {bill.texts.map((text, index) => (
-                            <div key={index} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+              {/* Amendments Tab */}
+              <TabsContent value="amendments" className="space-y-6">
+                <Card className="bg-gray-900 border-gray-800">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center">
+                      <FileEdit className="h-5 w-5 mr-2" />
+                      Amendments
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {bill.amendments && bill.amendments.length > 0 ? (
+                      <div className="space-y-3">
+                        {bill.amendments.map((amendment, index) => (
+                          <div key={index} className="p-3 bg-gray-800 rounded-lg">
+                            <div className="flex justify-between items-start">
                               <div>
-                                <div className="text-white font-medium">{text.type}</div>
-                                <div className="text-gray-400 text-sm">{new Date(text.date).toLocaleDateString()}</div>
+                                <p className="text-white font-medium">
+                                  {amendment.chamber} Amendment {amendment.number}
+                                </p>
+                                <p className="text-gray-300 text-sm mt-1">{amendment.description}</p>
                               </div>
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="border-gray-600 text-gray-400 hover:text-white bg-transparent"
-                                  onClick={() => window.open(`/api/bills/${text.doc_id}/text`, "_blank")}
-                                >
-                                  View Text
-                                  <ExternalLink className="h-3 w-3 ml-1" />
-                                </Button>
-                                {text.url && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="border-gray-600 text-gray-400 hover:text-white bg-transparent"
-                                    onClick={() => window.open(text.url, "_blank")}
-                                  >
-                                    State Link
-                                    <ExternalLink className="h-3 w-3 ml-1" />
-                                  </Button>
-                                )}
-                              </div>
+                              <Badge className="bg-gray-700 text-gray-300">{amendment.status}</Badge>
                             </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Amendments */}
-                  {bill.amendments && bill.amendments.length > 0 && (
-                    <Card className="bg-gray-900 border-gray-800">
-                      <CardHeader>
-                        <CardTitle className="text-white flex items-center">
-                          <FileX className="h-5 w-5 mr-2" />
-                          Amendments
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          {bill.amendments.map((amendment, index) => (
-                            <div key={index} className="p-3 bg-gray-800 rounded-lg">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="text-white font-medium">{amendment.title}</div>
-                                <Badge className={amendment.adopted ? "bg-green-500" : "bg-gray-500"}>
-                                  {amendment.adopted ? "ADOPTED" : "NOT ADOPTED"}
-                                </Badge>
-                              </div>
-                              <p className="text-gray-400 text-sm mb-2">{amendment.description}</p>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-gray-600 text-gray-400 hover:text-white bg-transparent"
-                                onClick={() => window.open(`/api/bills/${amendment.amendment_id}/amendment`, "_blank")}
-                              >
-                                View Amendment
-                                <ExternalLink className="h-3 w-3 ml-1" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Supplements */}
-                  {bill.supplements && bill.supplements.length > 0 && (
-                    <Card className="bg-gray-900 border-gray-800">
-                      <CardHeader>
-                        <CardTitle className="text-white flex items-center">
-                          <ScrollText className="h-5 w-5 mr-2" />
-                          Supplements
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          {bill.supplements.map((supplement, index) => (
-                            <div key={index} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-                              <div>
-                                <div className="text-white font-medium">{supplement.title}</div>
-                                <div className="text-gray-400 text-sm">
-                                  {supplement.type} • {new Date(supplement.date).toLocaleDateString()}
-                                </div>
-                              </div>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-gray-600 text-gray-400 hover:text-white bg-transparent"
-                                onClick={() =>
-                                  window.open(`/api/bills/${supplement.supplement_id}/supplement`, "_blank")
-                                }
-                              >
-                                View Supplement
-                                <ExternalLink className="h-3 w-3 ml-1" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-400">No amendments available</p>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
 
-              <TabsContent value="threads" className="mt-6">
+              {/* Supplements Tab */}
+              <TabsContent value="supplements" className="space-y-6">
+                <Card className="bg-gray-900 border-gray-800">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center">
+                      <Plus className="h-5 w-5 mr-2" />
+                      Supplements
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {bill.supplements && bill.supplements.length > 0 ? (
+                      <div className="space-y-3">
+                        {bill.supplements.map((supplement, index) => (
+                          <div key={index} className="p-3 bg-gray-800 rounded-lg">
+                            <p className="text-white font-medium">{supplement.title}</p>
+                            <p className="text-gray-400 text-sm">{supplement.type}</p>
+                            {supplement.description && (
+                              <p className="text-gray-300 text-sm mt-1">{supplement.description}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-400">No supplements available</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Threads Tab */}
+              <TabsContent value="threads" className="space-y-6">
                 <Card className="bg-gray-900 border-gray-800">
                   <CardHeader>
                     <div className="flex justify-between items-center">
@@ -672,10 +649,37 @@ export default function BillDetailPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Quick Stats */}
+            {/* Bill Status */}
             <Card className="bg-gray-900 border-gray-800">
               <CardHeader>
-                <CardTitle className="text-white">Quick Stats</CardTitle>
+                <CardTitle className="text-white">Bill Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-gray-400 text-sm">Current Status:</span>
+                    <p className="text-white font-medium">{bill.status}</p>
+                  </div>
+                  {bill.committee && (
+                    <div>
+                      <span className="text-gray-400 text-sm">Committee:</span>
+                      <p className="text-white font-medium">{bill.committee}</p>
+                    </div>
+                  )}
+                  {bill.next_action && (
+                    <div>
+                      <span className="text-gray-400 text-sm">Next Action:</span>
+                      <p className="text-white font-medium">{bill.next_action}</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Community Stats */}
+            <Card className="bg-gray-900 border-gray-800">
+              <CardHeader>
+                <CardTitle className="text-white">Community</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -692,13 +696,6 @@ export default function BillDetailPage() {
                       <span className="text-gray-400">Contributors</span>
                     </div>
                     <span className="text-white font-bold">{new Set(threads.map((t) => t.author_id)).size}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Vote className="h-4 w-4 text-green-500" />
-                      <span className="text-gray-400">Roll Calls</span>
-                    </div>
-                    <span className="text-white font-bold">{bill.votes?.length || 0}</span>
                   </div>
                 </div>
               </CardContent>
