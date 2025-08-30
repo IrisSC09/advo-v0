@@ -18,8 +18,10 @@ interface Bill {
   state: string
   bill_number: string
   status: string
-  party?: string
-  topic?: string
+  subjects?: string[]
+  sponsors?: Array<{
+    party: string
+  }>
 }
 
 interface BillsResponse {
@@ -59,8 +61,6 @@ export default function LegislationPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState("recent")
-  const [partyFilter, setPartyFilter] = useState("all")
-  const [topicFilter, setTopicFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
   const [stateFilter, setStateFilter] = useState("ALL")
   const [page, setPage] = useState(1)
@@ -74,7 +74,7 @@ export default function LegislationPage() {
     } else {
       fetchBills(1, true)
     }
-  }, [searchQuery, sortBy, partyFilter, topicFilter, statusFilter, stateFilter])
+  }, [searchQuery, sortBy, statusFilter, stateFilter])
 
   const fetchBills = async (pageNum: number, reset = false) => {
     setLoading(true)
@@ -85,8 +85,6 @@ export default function LegislationPage() {
         limit: "20",
       })
 
-      if (partyFilter !== "all") params.append("party", partyFilter)
-      if (topicFilter !== "all") params.append("topic", topicFilter)
       if (statusFilter !== "all") params.append("status", statusFilter)
 
       const response = await fetch(`/api/bills?${params}`)
@@ -151,8 +149,6 @@ export default function LegislationPage() {
 
   const clearFilters = () => {
     setSearchQuery("")
-    setPartyFilter("all")
-    setTopicFilter("all")
     setStatusFilter("all")
     setStateFilter("ALL")
     setSortBy("recent")
@@ -161,36 +157,20 @@ export default function LegislationPage() {
   const getPartyColor = (party: string) => {
     switch (party?.toLowerCase()) {
       case "democrat":
+      case "d":
         return "bg-blue-500"
       case "republican":
+      case "r":
         return "bg-red-500"
       case "independent":
+      case "i":
         return "bg-purple-500"
       default:
         return "bg-gray-500"
     }
   }
 
-  const getTopicColor = (topic: string) => {
-    switch (topic?.toLowerCase()) {
-      case "climate":
-        return "bg-green-500"
-      case "immigration":
-        return "bg-orange-500"
-      case "education":
-        return "bg-blue-500"
-      case "healthcare":
-        return "bg-red-500"
-      case "economics":
-        return "bg-yellow-500"
-      case "defense":
-        return "bg-gray-500"
-      default:
-        return "bg-purple-500"
-    }
-  }
-
-  const activeFiltersCount = [partyFilter, topicFilter, statusFilter].filter((f) => f !== "all").length
+  const activeFiltersCount = [statusFilter].filter((f) => f !== "all").length
 
   const displayItems = isSearchMode ? searchResults : bills
 
@@ -250,79 +230,28 @@ export default function LegislationPage() {
               </Select>
 
               {!isSearchMode && (
-                <>
-                  <Select value={partyFilter} onValueChange={setPartyFilter}>
-                    <SelectTrigger className="w-40 bg-gray-900 border-gray-700 text-white">
-                      <SelectValue placeholder="Party" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700">
-                      <SelectItem value="all" className="text-white hover:bg-neon-purple hover:text-black">
-                        All Parties
-                      </SelectItem>
-                      <SelectItem value="democrat" className="text-white hover:bg-neon-purple hover:text-black">
-                        Democrat
-                      </SelectItem>
-                      <SelectItem value="republican" className="text-white hover:bg-neon-purple hover:text-black">
-                        Republican
-                      </SelectItem>
-                      <SelectItem value="independent" className="text-white hover:bg-neon-purple hover:text-black">
-                        Independent
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={topicFilter} onValueChange={setTopicFilter}>
-                    <SelectTrigger className="w-40 bg-gray-900 border-gray-700 text-white">
-                      <SelectValue placeholder="Topic" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700">
-                      <SelectItem value="all" className="text-white hover:bg-neon-purple hover:text-black">
-                        All Topics
-                      </SelectItem>
-                      <SelectItem value="climate" className="text-white hover:bg-neon-purple hover:text-black">
-                        Climate
-                      </SelectItem>
-                      <SelectItem value="immigration" className="text-white hover:bg-neon-purple hover:text-black">
-                        Immigration
-                      </SelectItem>
-                      <SelectItem value="education" className="text-white hover:bg-neon-purple hover:text-black">
-                        Education
-                      </SelectItem>
-                      <SelectItem value="healthcare" className="text-white hover:bg-neon-purple hover:text-black">
-                        Healthcare
-                      </SelectItem>
-                      <SelectItem value="economics" className="text-white hover:bg-neon-purple hover:text-black">
-                        Economics
-                      </SelectItem>
-                      <SelectItem value="defense" className="text-white hover:bg-neon-purple hover:text-black">
-                        Defense
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-40 bg-gray-900 border-gray-700 text-white">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700">
-                      <SelectItem value="all" className="text-white hover:bg-neon-purple hover:text-black">
-                        All Status
-                      </SelectItem>
-                      <SelectItem value="introduced" className="text-white hover:bg-neon-purple hover:text-black">
-                        Introduced
-                      </SelectItem>
-                      <SelectItem value="committee" className="text-white hover:bg-neon-purple hover:text-black">
-                        Committee
-                      </SelectItem>
-                      <SelectItem value="passed" className="text-white hover:bg-neon-purple hover:text-black">
-                        Passed
-                      </SelectItem>
-                      <SelectItem value="enacted" className="text-white hover:bg-neon-purple hover:text-black">
-                        Enacted
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-40 bg-gray-900 border-gray-700 text-white">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-900 border-gray-700">
+                    <SelectItem value="all" className="text-white hover:bg-neon-purple hover:text-black">
+                      All Status
+                    </SelectItem>
+                    <SelectItem value="introduced" className="text-white hover:bg-neon-purple hover:text-black">
+                      Introduced
+                    </SelectItem>
+                    <SelectItem value="committee" className="text-white hover:bg-neon-purple hover:text-black">
+                      Committee
+                    </SelectItem>
+                    <SelectItem value="passed" className="text-white hover:bg-neon-purple hover:text-black">
+                      Passed
+                    </SelectItem>
+                    <SelectItem value="enacted" className="text-white hover:bg-neon-purple hover:text-black">
+                      Enacted
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               )}
             </div>
 
@@ -377,8 +306,8 @@ export default function LegislationPage() {
                   state: item.state,
                   bill_number: item.bill_number,
                   status: "Unknown",
-                  party: "Unknown",
-                  topic: "Other",
+                  subjects: [],
+                  sponsors: [],
                 }
               : item
 
@@ -390,11 +319,15 @@ export default function LegislationPage() {
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      {bill.party && bill.party !== "Unknown" && (
-                        <Badge className={`${getPartyColor(bill.party)} text-white text-xs`}>{bill.party}</Badge>
+                      {/* Show sponsor party if available */}
+                      {bill.sponsors?.[0]?.party && (
+                        <Badge className={`${getPartyColor(bill.sponsors[0].party)} text-white text-xs`}>
+                          {bill.sponsors[0].party}
+                        </Badge>
                       )}
-                      {bill.topic && bill.topic !== "Other" && (
-                        <Badge className={`${getTopicColor(bill.topic)} text-white text-xs`}>{bill.topic}</Badge>
+                      {/* Show first subject as primary topic */}
+                      {bill.subjects?.[0] && (
+                        <Badge className="bg-neon-purple text-white text-xs">{bill.subjects[0]}</Badge>
                       )}
                     </div>
                     <Badge className="bg-gray-700 text-gray-300 text-xs">{bill.status}</Badge>

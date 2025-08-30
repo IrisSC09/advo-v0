@@ -9,8 +9,10 @@ interface Bill {
   state: string
   bill_number: string
   status: string
-  party?: string
-  topic?: string
+  subjects?: string[]
+  sponsors?: Array<{
+    party: string
+  }>
 }
 
 interface BillsResponse {
@@ -19,69 +21,6 @@ interface BillsResponse {
   page: number
   limit: number
   hasMore: boolean
-}
-
-function inferPartyFromSponsor(sponsorName: string): string {
-  const name = sponsorName.toLowerCase()
-  if (name.includes("(d-") || name.includes("democrat")) return "Democrat"
-  if (name.includes("(r-") || name.includes("republican")) return "Republican"
-  if (name.includes("(i-") || name.includes("independent")) return "Independent"
-
-  // Infer from common names/patterns
-  if (name.includes("ocasio-cortez") || name.includes("sanders") || name.includes("warren") || name.includes("biden"))
-    return "Democrat"
-  if (name.includes("cruz") || name.includes("trump") || name.includes("mcconnell") || name.includes("graham"))
-    return "Republican"
-
-  return "Unknown"
-}
-
-function inferTopicFromTitle(title: string): string {
-  const titleLower = title.toLowerCase()
-  if (
-    titleLower.includes("climate") ||
-    titleLower.includes("environment") ||
-    titleLower.includes("green") ||
-    titleLower.includes("carbon")
-  )
-    return "Climate"
-  if (
-    titleLower.includes("immigration") ||
-    titleLower.includes("border") ||
-    titleLower.includes("visa") ||
-    titleLower.includes("refugee")
-  )
-    return "Immigration"
-  if (
-    titleLower.includes("education") ||
-    titleLower.includes("student") ||
-    titleLower.includes("school") ||
-    titleLower.includes("college")
-  )
-    return "Education"
-  if (
-    titleLower.includes("health") ||
-    titleLower.includes("medical") ||
-    titleLower.includes("medicare") ||
-    titleLower.includes("medicaid")
-  )
-    return "Healthcare"
-  if (
-    titleLower.includes("economic") ||
-    titleLower.includes("tax") ||
-    titleLower.includes("budget") ||
-    titleLower.includes("finance") ||
-    titleLower.includes("infrastructure")
-  )
-    return "Economics"
-  if (
-    titleLower.includes("defense") ||
-    titleLower.includes("military") ||
-    titleLower.includes("security") ||
-    titleLower.includes("veteran")
-  )
-    return "Defense"
-  return "Other"
 }
 
 async function fetchFromLegiScan(page: number, limit: number, query?: string): Promise<Bill[]> {
@@ -114,18 +53,63 @@ async function fetchFromLegiScan(page: number, limit: number, query?: string): P
       return []
     }
 
-    return bills.slice(0, limit).map((bill: any) => ({
-      bill_id: bill.bill_id,
-      title: bill.title || "Untitled Bill",
-      description: bill.description || bill.summary || "No description available",
-      introduced_date: bill.introduced || bill.last_action_date || "2024-01-01",
-      sponsor_name: bill.sponsors?.[0]?.name || bill.sponsor_name || "Unknown Sponsor",
-      state: bill.state || "US",
-      bill_number: bill.bill_number || `BILL-${bill.bill_id}`,
-      status: bill.status_desc || bill.status || "Unknown",
-      party: inferPartyFromSponsor(bill.sponsors?.[0]?.name || bill.sponsor_name || ""),
-      topic: inferTopicFromTitle(bill.title || ""),
-    }))
+    // For each bill, fetch detailed information to get subjects and sponsors
+    const detailedBills = await Promise.all(
+      bills.slice(0, limit).map(async (bill: any) => {
+        try {
+          const detailUrl = `https://api.legiscan.com/?key=${apiKey}&op=getBill&id=${bill.bill_id}`
+          const detailResponse = await fetch(detailUrl)
+
+          if (detailResponse.ok) {
+            const detailData = await detailResponse.json()
+            const billDetail = detailData.bill
+
+            // Process subjects
+            const subjects = billDetail.subjects
+              ? Object.values(billDetail.subjects).map((subject: any) => subject.subject_name || subject)
+              : []
+
+            // Process sponsors
+            const sponsors = billDetail.sponsors
+              ? Object.values(billDetail.sponsors).map((sponsor: any) => ({
+                  party: sponsor.party || "Unknown",
+                }))
+              : []
+
+            return {
+              bill_id: bill.bill_id,
+              title: bill.title || "Untitled Bill",
+              description: bill.description || bill.summary || "No description available",
+              introduced_date: bill.introduced || bill.last_action_date || "2024-01-01",
+              sponsor_name: billDetail.sponsors?.[0]?.name || bill.sponsor_name || "Unknown Sponsor",
+              state: bill.state || "US",
+              bill_number: bill.bill_number || `BILL-${bill.bill_id}`,
+              status: bill.status_desc || bill.status || "Unknown",
+              subjects,
+              sponsors,
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching details for bill ${bill.bill_id}:`, error)
+        }
+
+        // Fallback to basic bill data
+        return {
+          bill_id: bill.bill_id,
+          title: bill.title || "Untitled Bill",
+          description: bill.description || bill.summary || "No description available",
+          introduced_date: bill.introduced || bill.last_action_date || "2024-01-01",
+          sponsor_name: bill.sponsor_name || "Unknown Sponsor",
+          state: bill.state || "US",
+          bill_number: bill.bill_number || `BILL-${bill.bill_id}`,
+          status: bill.status_desc || bill.status || "Unknown",
+          subjects: [],
+          sponsors: [],
+        }
+      }),
+    )
+
+    return detailedBills.filter(Boolean)
   } catch (error) {
     console.error("Error fetching from LegiScan:", error)
     return []
@@ -137,22 +121,12 @@ export async function GET(request: NextRequest) {
   const page = Number.parseInt(searchParams.get("page") || "1")
   const limit = Number.parseInt(searchParams.get("limit") || "20")
   const query = searchParams.get("query")
-  const party = searchParams.get("party")
-  const topic = searchParams.get("topic")
   const status = searchParams.get("status")
 
   try {
-    let bills = await fetchFromLegiScan(page, 100, query) // Fetch up to 100 bills
+    let bills = await fetchFromLegiScan(page, limit, query)
 
     // Apply filters
-    if (party && party !== "all") {
-      bills = bills.filter((bill) => bill.party?.toLowerCase() === party.toLowerCase())
-    }
-
-    if (topic && topic !== "all") {
-      bills = bills.filter((bill) => bill.topic?.toLowerCase() === topic.toLowerCase())
-    }
-
     if (status && status !== "all") {
       bills = bills.filter((bill) => bill.status?.toLowerCase().includes(status.toLowerCase()))
     }
@@ -160,17 +134,12 @@ export async function GET(request: NextRequest) {
     // Sort by introduction date (most recent first)
     bills.sort((a, b) => new Date(b.introduced_date).getTime() - new Date(a.introduced_date).getTime())
 
-    // Paginate results
-    const startIndex = (page - 1) * limit
-    const endIndex = startIndex + limit
-    const paginatedBills = bills.slice(startIndex, endIndex)
-
     const response: BillsResponse = {
-      bills: paginatedBills,
+      bills,
       total: bills.length,
       page,
       limit,
-      hasMore: endIndex < bills.length,
+      hasMore: bills.length >= limit,
     }
 
     return NextResponse.json(response)

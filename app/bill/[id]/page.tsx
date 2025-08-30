@@ -191,6 +191,19 @@ export default function BillDetailPage() {
     }
   }
 
+  const formatChamber = (chamber: string) => {
+    switch (chamber?.toLowerCase()) {
+      case "s":
+      case "senate":
+        return "Senate"
+      case "h":
+      case "house":
+        return "House of Representatives"
+      default:
+        return chamber
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black pt-20 flex items-center justify-center">
@@ -213,6 +226,8 @@ export default function BillDetailPage() {
       </div>
     )
   }
+
+  const latestHistoryItem = bill.history?.[0]
 
   return (
     <div className="min-h-screen bg-black pt-20">
@@ -303,65 +318,6 @@ export default function BillDetailPage() {
 
               {/* Overview Tab */}
               <TabsContent value="overview" className="space-y-6">
-                {/* Bill Status Details */}
-                <Card className="bg-gray-900 border-gray-800">
-                  <CardHeader>
-                    <CardTitle className="text-white">Current Status</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <span className="text-gray-400 text-sm">Status:</span>
-                        <p className="text-white font-medium">{bill.status}</p>
-                      </div>
-                      {bill.status_date && (
-                        <div>
-                          <span className="text-gray-400 text-sm">Status Date:</span>
-                          <p className="text-white font-medium">{new Date(bill.status_date).toLocaleDateString()}</p>
-                        </div>
-                      )}
-                      {bill.committee && (
-                        <div>
-                          <span className="text-gray-400 text-sm">Committee:</span>
-                          <p className="text-white font-medium">{bill.committee}</p>
-                        </div>
-                      )}
-                      {bill.next_action && (
-                        <div>
-                          <span className="text-gray-400 text-sm">Next Action:</span>
-                          <p className="text-white font-medium">{bill.next_action}</p>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Progress Events */}
-                {bill.progress && bill.progress.length > 0 && (
-                  <Card className="bg-gray-900 border-gray-800">
-                    <CardHeader>
-                      <CardTitle className="text-white flex items-center">
-                        <Calendar className="h-5 w-5 mr-2" />
-                        Progress Timeline
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {bill.progress.slice(0, 10).map((item, index) => (
-                          <div key={index} className="flex gap-4 p-3 bg-gray-800 rounded-lg">
-                            <div className="text-gray-400 text-sm min-w-[100px]">
-                              {new Date(item.date).toLocaleDateString()}
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-white">{item.event}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
                 {/* Sponsors */}
                 {bill.sponsors && bill.sponsors.length > 0 && (
                   <Card className="bg-gray-900 border-gray-800">
@@ -407,30 +363,9 @@ export default function BillDetailPage() {
                             </div>
                             <div className="flex-1">
                               <p className="text-white">{item.action}</p>
-                              {item.chamber && <p className="text-gray-400 text-sm">{item.chamber}</p>}
+                              {item.chamber && <p className="text-gray-400 text-sm">{formatChamber(item.chamber)}</p>}
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Subjects */}
-                {bill.subjects && bill.subjects.length > 0 && (
-                  <Card className="bg-gray-900 border-gray-800">
-                    <CardHeader>
-                      <CardTitle className="text-white">Subjects</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {bill.subjects.map((subject, index) => (
-                          <Badge
-                            key={index}
-                            className="bg-neon-purple/20 text-neon-purple border border-neon-purple/50"
-                          >
-                            {subject}
-                          </Badge>
                         ))}
                       </div>
                     </CardContent>
@@ -550,7 +485,7 @@ export default function BillDetailPage() {
                             <div className="flex justify-between items-start">
                               <div>
                                 <p className="text-white font-medium">
-                                  {amendment.chamber} Amendment {amendment.number}
+                                  {formatChamber(amendment.chamber)} Amendment {amendment.number}
                                 </p>
                                 <p className="text-gray-300 text-sm mt-1">{amendment.description}</p>
                               </div>
@@ -686,30 +621,18 @@ export default function BillDetailPage() {
                 <CardTitle className="text-white">Bill Status</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                {latestHistoryItem ? (
                   <div>
-                    <span className="text-gray-400 text-sm">Current Status:</span>
-                    <p className="text-white font-medium">{bill.status}</p>
+                    <span className="text-gray-400 text-sm">Last Update:</span>
+                    <p className="text-white font-medium mb-2">{latestHistoryItem.action}</p>
+                    <p className="text-gray-400 text-sm">
+                      {new Date(latestHistoryItem.date).toLocaleDateString()}
+                      {latestHistoryItem.chamber && ` • ${formatChamber(latestHistoryItem.chamber)}`}
+                    </p>
                   </div>
-                  {bill.status_date && (
-                    <div>
-                      <span className="text-gray-400 text-sm">Status Date:</span>
-                      <p className="text-white font-medium">{new Date(bill.status_date).toLocaleDateString()}</p>
-                    </div>
-                  )}
-                  {bill.committee && (
-                    <div>
-                      <span className="text-gray-400 text-sm">Committee:</span>
-                      <p className="text-white font-medium">{bill.committee}</p>
-                    </div>
-                  )}
-                  {bill.next_action && (
-                    <div>
-                      <span className="text-gray-400 text-sm">Next Action:</span>
-                      <p className="text-white font-medium">{bill.next_action}</p>
-                    </div>
-                  )}
-                </div>
+                ) : (
+                  <p className="text-gray-400">No status updates available</p>
+                )}
               </CardContent>
             </Card>
 
