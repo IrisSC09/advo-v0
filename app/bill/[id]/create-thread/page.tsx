@@ -2,12 +2,12 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Upload, FileText, Music, Palette, CheckCircle, X } from "lucide-react"
+import { ArrowLeft, Upload, FileText, Music, Palette, CheckCircle, X, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useAuth } from "@/components/auth/auth-provider"
@@ -22,6 +22,7 @@ export default function CreateThreadPage() {
   const [tags, setTags] = useState("")
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [error, setError] = useState("")
   const [uploadedFile, setUploadedFile] = useState<{
     url: string
     fileName: string
@@ -36,11 +37,26 @@ export default function CreateThreadPage() {
     { value: "blog", label: "Blog Post", icon: FileText, description: "Written analysis or opinion" },
   ]
 
+  // Clear error when user starts typing
+  useEffect(() => {
+    if (error) {
+      setError("")
+    }
+  }, [title, description, threadType])
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
+    // Check file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      setError("File size must be less than 10MB")
+      return
+    }
+
     setUploading(true)
+    setError("")
+
     try {
       const formData = new FormData()
       formData.append("file", file)
@@ -58,12 +74,12 @@ export default function CreateThreadPage() {
           fileType: data.fileType,
         })
       } else {
-        const error = await response.json()
-        alert(error.error || "Failed to upload file")
+        const errorData = await response.json()
+        setError(errorData.error || "Failed to upload file")
       }
     } catch (error) {
       console.error("Error uploading file:", error)
-      alert("Failed to upload file. Please try again.")
+      setError("Failed to upload file. Please try again.")
     } finally {
       setUploading(false)
     }
@@ -75,13 +91,15 @@ export default function CreateThreadPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("")
+
     if (!user) {
-      alert("Please sign in to create a thread")
+      setError("Please sign in to create a thread")
       return
     }
 
     if (!threadType || !title.trim() || !description.trim()) {
-      alert("Please fill in all required fields")
+      setError("Please fill in all required fields")
       return
     }
 
@@ -124,7 +142,7 @@ export default function CreateThreadPage() {
       }
     } catch (error) {
       console.error("Error creating thread:", error)
-      alert(`Failed to create thread: ${error.message}`)
+      setError(`Failed to create thread: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
       setLoading(false)
     }
@@ -184,6 +202,14 @@ export default function CreateThreadPage() {
           </p>
         </div>
 
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-900/20 border border-red-500/50 rounded-lg flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
+            <p className="text-red-400">{error}</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
           <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
@@ -238,7 +264,9 @@ export default function CreateThreadPage() {
                   onChange={(e) => setTitle(e.target.value)}
                   className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
                   required
+                  maxLength={200}
                 />
+                <p className="text-xs text-gray-500 mt-1">{title.length}/200 characters</p>
               </div>
 
               {/* Description */}
@@ -251,7 +279,9 @@ export default function CreateThreadPage() {
                   rows={4}
                   className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
                   required
+                  maxLength={2000}
                 />
+                <p className="text-xs text-gray-500 mt-1">{description.length}/2000 characters</p>
               </div>
 
               {/* File Upload */}
@@ -317,7 +347,9 @@ export default function CreateThreadPage() {
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
                   className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                  maxLength={500}
                 />
+                <p className="text-xs text-gray-500 mt-1">Separate tags with commas</p>
               </div>
 
               {/* Actions */}
@@ -334,8 +366,9 @@ export default function CreateThreadPage() {
                   variant="outline"
                   className="border-gray-600 text-gray-400 hover:text-white bg-transparent"
                   disabled={loading}
+                  onClick={() => router.push(`/bill/${params.id}`)}
                 >
-                  Save Draft
+                  Cancel
                 </Button>
               </div>
             </CardContent>
