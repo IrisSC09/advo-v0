@@ -195,7 +195,7 @@ export default function CreateThreadPage() {
             <CardContent className="space-y-6">
               {/* Thread Type Selection */}
               <div>
-                <label className="block text-white font-medium mb-3">Content Type</label>
+                <label className="block text-white font-medium mb-3">Content Type*</label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {threadTypes.map((type) => {
                     const Icon = type.icon
@@ -231,7 +231,7 @@ export default function CreateThreadPage() {
 
               {/* Title */}
               <div>
-                <label className="block text-white font-medium mb-2">Title</label>
+                <label className="block text-white font-medium mb-2">Title*</label>
                 <Input
                   placeholder="Give your thread a compelling title..."
                   value={title}
@@ -243,7 +243,7 @@ export default function CreateThreadPage() {
 
               {/* Description */}
               <div>
-                <label className="block text-white font-medium mb-2">Description</label>
+                <label className="block text-white font-medium mb-2">Description*</label>
                 <Textarea
                   placeholder="Describe your content and how it relates to the bill..."
                   value={description}
