@@ -80,6 +80,11 @@ async function fetchBillFromLegiScan(billId: string): Promise<BillDetail | null>
       return null
     }
 
+    // Process subjects - extract subject names from objects
+    const subjects = bill.subjects
+      ? Object.values(bill.subjects).map((subject: any) => subject.subject_name || subject)
+      : []
+
     return {
       bill_id: bill.bill_id,
       title: bill.title || "Untitled Bill",
@@ -95,7 +100,7 @@ async function fetchBillFromLegiScan(billId: string): Promise<BillDetail | null>
       committee: bill.committee?.name || "Unknown Committee",
       next_action: bill.history?.[0]?.action || "No upcoming actions",
       sponsors: bill.sponsors || [],
-      subjects: bill.subjects || [],
+      subjects,
       history: bill.history || [],
       votes: bill.votes || [],
       texts: bill.texts || [],

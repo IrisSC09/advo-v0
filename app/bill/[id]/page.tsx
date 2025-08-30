@@ -46,7 +46,7 @@ interface BillDetail {
     party: string
     role: string
   }>
-  subjects?: string[]
+  subjects?: (string | { subject_id: number; subject_name: string })[]
   history?: Array<{
     date: string
     action: string
@@ -376,7 +376,7 @@ export default function BillDetailPage() {
                             key={index}
                             className="bg-neon-purple/20 text-neon-purple border border-neon-purple/50"
                           >
-                            {subject}
+                            {typeof subject === "string" ? subject : subject.subject_name || subject}
                           </Badge>
                         ))}
                       </div>
