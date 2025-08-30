@@ -11,8 +11,6 @@ interface Bill {
   status: string
   party?: string
   topic?: string
-  engagement?: number
-  threads?: number
 }
 
 interface BillsResponse {
@@ -22,85 +20,6 @@ interface BillsResponse {
   limit: number
   hasMore: boolean
 }
-
-// Mock data as fallback
-const mockBills: Bill[] = [
-  {
-    bill_id: 1,
-    title: "Climate Action and Green Jobs Act",
-    description:
-      "Comprehensive legislation to address climate change through job creation in renewable energy sectors and carbon reduction targets.",
-    introduced_date: "2024-01-15",
-    sponsor_name: "Rep. Alexandria Ocasio-Cortez",
-    state: "US",
-    bill_number: "HR-2024-001",
-    status: "Committee Review",
-    party: "Democrat",
-    topic: "Climate",
-    engagement: 1247,
-    threads: 23,
-  },
-  {
-    bill_id: 2,
-    title: "Border Security Enhancement Act",
-    description:
-      "Legislation to strengthen border security through increased funding for border patrol and enhanced screening technologies.",
-    introduced_date: "2024-01-12",
-    sponsor_name: "Sen. Ted Cruz",
-    state: "US",
-    bill_number: "S-2024-045",
-    status: "Floor Vote Pending",
-    party: "Republican",
-    topic: "Immigration",
-    engagement: 892,
-    threads: 18,
-  },
-  {
-    bill_id: 3,
-    title: "Student Debt Relief and Education Reform Act",
-    description:
-      "Comprehensive student debt forgiveness program coupled with free community college and trade school access.",
-    introduced_date: "2024-01-10",
-    sponsor_name: "Sen. Bernie Sanders",
-    state: "US",
-    bill_number: "HR-2024-078",
-    status: "Introduced",
-    party: "Independent",
-    topic: "Education",
-    engagement: 2156,
-    threads: 31,
-  },
-  {
-    bill_id: 4,
-    title: "Healthcare Price Transparency Act",
-    description:
-      "Requires healthcare providers and insurers to disclose pricing information to improve market transparency.",
-    introduced_date: "2024-01-08",
-    sponsor_name: "Sen. Susan Collins",
-    state: "US",
-    bill_number: "S-2024-023",
-    status: "Committee Review",
-    party: "Republican",
-    topic: "Healthcare",
-    engagement: 634,
-    threads: 12,
-  },
-  {
-    bill_id: 5,
-    title: "Infrastructure Investment and Jobs Act Extension",
-    description:
-      "Extension of federal infrastructure spending with focus on broadband expansion and electric vehicle charging networks.",
-    introduced_date: "2024-01-05",
-    sponsor_name: "Rep. Pete Buttigieg",
-    state: "US",
-    bill_number: "HR-2024-089",
-    status: "Passed House",
-    party: "Democrat",
-    topic: "Economics",
-    engagement: 1543,
-    threads: 27,
-  },
-]
 
 function inferPartyFromSponsor(sponsorName: string): string {
   const name = sponsorName.toLowerCase()
@@ -166,12 +85,7 @@ function inferTopicFromTitle(title: string): string {
 }
 
 async function fetchFromLegiScan(page: number, limit: number, query?: string): Promise<Bill[]> {
-  const apiKey = process.env.LEGISCAN_API_KEY
-
-  if (!apiKey) {
-    console.log("No LegiScan API key found, using mock data")
-    return mockBills
-  }
+  const apiKey = "d0db0d79caefbd288452efcea05eca71"
 
   try {
     let url: string
@@ -197,8 +111,7 @@ async function fetchFromLegiScan(page: number, limit: number, query?: string): P
     }
 
     if (bills.length === 0) {
-      console.log("No bills returned from LegiScan, using mock data")
-      return mockBills
+      return []
     }
 
     return bills.slice(0, limit).map((bill: any) => ({
@@ -212,13 +125,10 @@ async function fetchFromLegiScan(page: number, limit: number, query?: string): P
       status: bill.status_desc || bill.status || "Unknown",
       party: inferPartyFromSponsor(bill.sponsors?.[0]?.name || bill.sponsor_name || ""),
       topic: inferTopicFromTitle(bill.title || ""),
-      engagement: Math.floor(Math.random() * 2000) + 100,
-      threads: Math.floor(Math.random() * 50) + 1,
     }))
   } catch (error) {
     console.error("Error fetching from LegiScan:", error)
-    console.log("Falling back to mock data")
-    return mockBills
+    return []
   }
 }
 
@@ -267,10 +177,9 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error in bills API:", error)
 
-    // Return mock data as fallback
     const response: BillsResponse = {
-      bills: mockBills.slice(0, limit),
-      total: mockBills.length,
+      bills: [],
+      total: 0,
       page: 1,
       limit,
       hasMore: false,

@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { generateBillSummary } from "@/lib/ai"
+import { generateText } from "ai"
+import { google } from "@ai-sdk/google"
 
 interface BillDetail {
   bill_id: number
@@ -12,8 +13,6 @@ interface BillDetail {
   status: string
   party?: string
   topic?: string
-  engagement?: number
-  threads?: number
   full_text?: string
   committee?: string
   next_action?: string
@@ -25,55 +24,8 @@ interface BillDetail {
   }
 }
 
-// Mock bill details
-const mockBillDetails: Record<string, BillDetail> = {
-  "1": {
-    bill_id: 1,
-    title: "Climate Action and Green Jobs Act",
-    description:
-      "Comprehensive legislation to address climate change through job creation in renewable energy sectors and carbon reduction targets.",
-    introduced_date: "2024-01-15",
-    sponsor_name: "Rep. Alexandria Ocasio-Cortez (D-NY)",
-    state: "US",
-    bill_number: "HR-2024-001",
-    status: "Committee Review",
-    party: "Democrat",
-    topic: "Climate",
-    engagement: 1247,
-    threads: 23,
-    full_text:
-      "A comprehensive bill to address climate change through massive investment in renewable energy infrastructure, creation of green jobs, and establishment of ambitious carbon reduction targets. This legislation proposes a $500 billion investment over 5 years to transition the United States to a clean energy economy while ensuring no worker is left behind in the transition.",
-    committee: "House Committee on Energy and Commerce",
-    next_action: "Committee markup scheduled for January 25, 2024",
-  },
-  "hr-2024-001": {
-    bill_id: 1,
-    title: "Climate Action and Green Jobs Act",
-    description:
-      "Comprehensive legislation to address climate change through job creation in renewable energy sectors and carbon reduction targets.",
-    introduced_date: "2024-01-15",
-    sponsor_name: "Rep. Alexandria Ocasio-Cortez (D-NY)",
-    state: "US",
-    bill_number: "HR-2024-001",
-    status: "Committee Review",
-    party: "Democrat",
-    topic: "Climate",
-    engagement: 1247,
-    threads: 23,
-    full_text:
-      "A comprehensive bill to address climate change through massive investment in renewable energy infrastructure, creation of green jobs, and establishment of ambitious carbon reduction targets. This legislation proposes a $500 billion investment over 5 years to transition the United States to a clean energy economy while ensuring no worker is left behind in the transition.",
-    committee: "House Committee on Energy and Commerce",
-    next_action: "Committee markup scheduled for January 25, 2024",
-  },
-}
-
 async function fetchBillFromLegiScan(billId: string): Promise<BillDetail | null> {
-  const apiKey = process.env.LEGISCAN_API_KEY
-
-  if (!apiKey) {
-    console.log("No LegiScan API key found, using mock data")
-    return mockBillDetails[billId] || null
-  }
+  const apiKey = "d0db0d79caefbd288452efcea05eca71"
 
   try {
     const url = `https://api.legiscan.com/?key=${apiKey}&op=getBill&id=${billId}`
@@ -84,12 +36,11 @@ async function fetchBillFromLegiScan(billId: string): Promise<BillDetail | null>
     }
 
     const data = await response.json()
-
-    if (!data.bill) {
-      return mockBillDetails[billId] || null
-    }
-
     const bill = data.bill
+
+    if (!bill) {
+      return null
+    }
 
     return {
       bill_id: bill.bill_id,
@@ -99,90 +50,111 @@ async function fetchBillFromLegiScan(billId: string): Promise<BillDetail | null>
       sponsor_name: bill.sponsors?.[0]?.name || "Unknown Sponsor",
       state: bill.state || "US",
       bill_number: bill.bill_number || `BILL-${bill.bill_id}`,
-      status: bill.status_desc || bill.status || "Unknown",
-      party: bill.sponsors?.[0]?.party || "Unknown",
+      status: bill.status_desc || "Unknown",
+      party: inferPartyFromSponsor(bill.sponsors?.[0]?.name || ""),
       topic: inferTopicFromTitle(bill.title || ""),
-      engagement: Math.floor(Math.random() * 2000) + 100,
-      threads: Math.floor(Math.random() * 50) + 1,
-      full_text: bill.text || bill.description || "Full text not available",
-      committee: bill.committee || "Unknown Committee",
-      next_action: bill.next_action || "No scheduled action",
+      full_text: bill.texts?.[0]?.doc || "",
+      committee: bill.committee?.name || "Unknown Committee",
+      next_action: bill.history?.[0]?.action || "No upcoming actions",
     }
   } catch (error) {
     console.error("Error fetching bill from LegiScan:", error)
-    return mockBillDetails[billId] || null
+    return null
   }
+}
+
+function inferPartyFromSponsor(sponsorName: string): string {
+  const name = sponsorName.toLowerCase()
+  if (name.includes("(d-") || name.includes("democrat")) return "Democrat"
+  if (name.includes("(r-") || name.includes("republican")) return "Republican"
+  if (name.includes("(i-") || name.includes("independent")) return "Independent"
+  return "Unknown"
 }
 
 function inferTopicFromTitle(title: string): string {
   const titleLower = title.toLowerCase()
-  if (
-    titleLower.includes("climate") ||
-    titleLower.includes("environment") ||
-    titleLower.includes("green") ||
-    titleLower.includes("carbon")
-  )
+  if (titleLower.includes("climate") || titleLower.includes("environment") || titleLower.includes("green"))
     return "Climate"
-  if (
-    titleLower.includes("immigration") ||
-    titleLower.includes("border") ||
-    titleLower.includes("visa") ||
-    titleLower.includes("refugee")
-  )
-    return "Immigration"
-  if (
-    titleLower.includes("education") ||
-    titleLower.includes("student") ||
-    titleLower.includes("school") ||
-    titleLower.includes("college")
-  )
+  if (titleLower.includes("immigration") || titleLower.includes("border")) return "Immigration"
+  if (titleLower.includes("education") || titleLower.includes("student") || titleLower.includes("school"))
     return "Education"
-  if (
-    titleLower.includes("health") ||
-    titleLower.includes("medical") ||
-    titleLower.includes("medicare") ||
-    titleLower.includes("medicaid")
-  )
-    return "Healthcare"
-  if (
-    titleLower.includes("economic") ||
-    titleLower.includes("tax") ||
-    titleLower.includes("budget") ||
-    titleLower.includes("finance") ||
-    titleLower.includes("infrastructure")
-  )
+  if (titleLower.includes("health") || titleLower.includes("medical")) return "Healthcare"
+  if (titleLower.includes("economic") || titleLower.includes("tax") || titleLower.includes("infrastructure"))
     return "Economics"
-  if (
-    titleLower.includes("defense") ||
-    titleLower.includes("military") ||
-    titleLower.includes("security") ||
-    titleLower.includes("veteran")
-  )
+  if (titleLower.includes("defense") || titleLower.includes("military") || titleLower.includes("security"))
     return "Defense"
   return "Other"
 }
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  const billId = params.id
-
+async function generateAISummary(bill: BillDetail): Promise<BillDetail["ai_summary"]> {
   try {
-    const bill = await fetchBillFromLegiScan(billId)
+    const prompt = `Analyze this legislation and provide a comprehensive summary:
+
+Title: ${bill.title}
+Description: ${bill.description}
+Sponsor: ${bill.sponsor_name}
+Status: ${bill.status}
+
+Please provide:
+1. A clear, concise summary (2-3 sentences)
+2. 3-5 key points or provisions
+3. Potential impact on citizens
+4. Any controversial or notable aspects
+
+Format your response as JSON with the following structure:
+{
+  "summary": "...",
+  "keyPoints": ["...", "...", "..."],
+  "impact": "...",
+  "controversialAspects": "..."
+}`
+
+    const { text } = await generateText({
+      model: google("gemini-1.5-flash"),
+      prompt,
+      maxTokens: 1000,
+    })
+
+    // Try to parse the JSON response
+    try {
+      const parsed = JSON.parse(text)
+      return {
+        summary: parsed.summary || "AI summary unavailable",
+        keyPoints: Array.isArray(parsed.keyPoints) ? parsed.keyPoints : ["Key points unavailable"],
+        impact: parsed.impact || "Impact analysis unavailable",
+        controversialAspects: parsed.controversialAspects || "No notable aspects identified",
+      }
+    } catch (parseError) {
+      // If JSON parsing fails, create a basic summary from the text
+      return {
+        summary: text.substring(0, 300) + "...",
+        keyPoints: ["AI analysis available in summary"],
+        impact: "Detailed impact analysis in progress",
+        controversialAspects: "Analysis pending",
+      }
+    }
+  } catch (error) {
+    console.error("Error generating AI summary:", error)
+    return {
+      summary: "AI summary temporarily unavailable",
+      keyPoints: ["Summary generation in progress"],
+      impact: "Impact analysis pending",
+      controversialAspects: "Analysis unavailable",
+    }
+  }
+}
+
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const bill = await fetchBillFromLegiScan(params.id)
 
     if (!bill) {
       return NextResponse.json({ error: "Bill not found" }, { status: 404 })
     }
 
-    // Generate AI summary if we have the full text
-    if (bill.full_text && !bill.ai_summary) {
-      try {
-        const aiSummary = await generateBillSummary(bill.full_text, bill.title)
-        if (aiSummary) {
-          bill.ai_summary = aiSummary
-        }
-      } catch (error) {
-        console.error("Error generating AI summary:", error)
-      }
-    }
+    // Generate AI summary
+    const aiSummary = await generateAISummary(bill)
+    bill.ai_summary = aiSummary
 
     return NextResponse.json(bill)
   } catch (error) {

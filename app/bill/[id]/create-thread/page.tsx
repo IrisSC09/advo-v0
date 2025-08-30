@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Upload, FileText, Music, Palette, CheckCircle } from "lucide-react"
+import { ArrowLeft, Upload, FileText, Music, Palette, CheckCircle, X } from "lucide-react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useAuth } from "@/components/auth/auth-provider"
@@ -22,6 +22,12 @@ export default function CreateThreadPage() {
   const [tags, setTags] = useState("")
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [uploadedFile, setUploadedFile] = useState<{
+    url: string
+    fileName: string
+    fileType: string
+  } | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   const threadTypes = [
     { value: "zine", label: "Zine", icon: FileText, description: "Digital magazine or publication" },
@@ -29,6 +35,43 @@ export default function CreateThreadPage() {
     { value: "music", label: "Protest Music", icon: Music, description: "Songs, audio content" },
     { value: "blog", label: "Blog Post", icon: FileText, description: "Written analysis or opinion" },
   ]
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setUploadedFile({
+          url: data.url,
+          fileName: data.fileName,
+          fileType: data.fileType,
+        })
+      } else {
+        const error = await response.json()
+        alert(error.error || "Failed to upload file")
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error)
+      alert("Failed to upload file. Please try again.")
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const removeFile = () => {
+    setUploadedFile(null)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,6 +97,8 @@ export default function CreateThreadPage() {
             .split(",")
             .map((tag) => tag.trim())
             .filter(Boolean),
+          file_url: uploadedFile?.url || null,
+          preview_url: uploadedFile?.fileType.startsWith("image/") ? uploadedFile.url : null,
         }),
       })
 
@@ -197,14 +242,59 @@ export default function CreateThreadPage() {
                 />
               </div>
 
-              {/* File Upload Placeholder */}
+              {/* File Upload */}
               <div>
-                <label className="block text-white font-medium mb-2">Upload Content (Coming Soon)</label>
-                <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center opacity-50">
-                  <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-400 mb-2">File upload feature coming soon</p>
-                  <p className="text-gray-500 text-sm">For now, include links in your description</p>
-                </div>
+                <label className="block text-white font-medium mb-2">Upload Content</label>
+                {uploadedFile ? (
+                  <div className="border-2 border-gray-700 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-advoline-orange/20 rounded-lg flex items-center justify-center">
+                          <FileText className="h-6 w-6 text-advoline-orange" />
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">{uploadedFile.fileName}</p>
+                          <p className="text-gray-400 text-sm">{uploadedFile.fileType}</p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={removeFile}
+                        className="text-gray-400 hover:text-white"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center hover:border-gray-600 transition-colors">
+                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-400 mb-2">Drag and drop your files here, or click to browse</p>
+                    <p className="text-gray-500 text-sm mb-4">
+                      Supports images, PDFs, audio files, and videos (max 10MB)
+                    </p>
+                    <input
+                      type="file"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      id="file-upload"
+                      accept="image/*,application/pdf,audio/*,video/*"
+                      disabled={uploading}
+                    />
+                    <label htmlFor="file-upload">
+                      <Button
+                        type="button"
+                        className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-600"
+                        disabled={uploading}
+                        asChild
+                      >
+                        <span>{uploading ? "Uploading..." : "Choose Files"}</span>
+                      </Button>
+                    </label>
+                  </div>
+                )}
               </div>
 
               {/* Tags */}
@@ -223,7 +313,7 @@ export default function CreateThreadPage() {
                 <Button
                   type="submit"
                   className="flex-1 bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold"
-                  disabled={!threadType || !title || !description || loading}
+                  disabled={!threadType || !title || !description || loading || uploading}
                 >
                   {loading ? "Publishing..." : "Publish Thread"}
                 </Button>
