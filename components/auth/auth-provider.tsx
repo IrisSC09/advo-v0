@@ -64,25 +64,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single()
 
-      if (error) {
-        console.error("Error fetching profile:", error)
-        // If profile doesn't exist, create a basic one
-        if (error.code === "PGRST116") {
-          const { data: userData } = await supabase.auth.getUser()
-          if (userData.user) {
-            const { error: insertError } = await supabase.from("profiles").insert([
-              {
-                id: userData.user.id,
-                username: userData.user.email?.split("@")[0] || "user",
-              },
-            ])
-            if (!insertError) {
-              fetchProfile(userId) // Retry fetching
-              return
-            }
+      if (error && error.code === "PGRST116") {
+        // Profile doesn't exist, create one
+        const { data: userData } = await supabase.auth.getUser()
+        if (userData.user) {
+          const newProfile = {
+            id: userData.user.id,
+            username: userData.user.email?.split("@")[0] || "user",
+            full_name: userData.user.user_metadata?.full_name || userData.user.email?.split("@")[0] || "User",
+            avatar_url: userData.user.user_metadata?.avatar_url || null,
+            created_at: new Date().toISOString(),
+          }
+
+          const { data: insertedProfile, error: insertError } = await supabase
+            .from("profiles")
+            .insert([newProfile])
+            .select()
+            .single()
+
+          if (!insertError && insertedProfile) {
+            setProfile(insertedProfile)
           }
         }
-      } else {
+      } else if (!error && data) {
         setProfile(data)
       }
     } catch (error) {

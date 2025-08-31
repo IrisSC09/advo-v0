@@ -1,9 +1,20 @@
 import { createClient } from "@supabase/supabase-js"
 
-const supabaseUrl = "https://mweaqdserejokxniakyn.supabase.co"
-const supabaseAnonKey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13ZWFxZHNlcmVqb2t4bmlha3luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwNzMzNTUsImV4cCI6MjA3MTY0OTM1NX0.9D09ycbbcvIh11986GC35cZ-CT_wiOA4vlJ7QryfSaE"
-
 export function createServerClient() {
-  return createClient(supabaseUrl, supabaseAnonKey)
+  const supabaseUrl = "https://mweaqdserejokxniakyn.supabase.co"
+  const supabaseServiceKey =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13ZWFxZHNlcmVqb2t4bmlha3luIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjA3MzM1NSwiZXhwIjoyMDcxNjQ5MzU1fQ.L2mLPEm4VSlWP8LlOli0FF67yqqhl3nIxHzEJtMRixU"
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error("Missing Supabase environment variables")
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
 }
+
+export const supabase = createServerClient()
