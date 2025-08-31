@@ -1,4 +1,4 @@
-// lib/congressData.ts
+
 export interface Bill {
   bill_id: number;
   title: string;

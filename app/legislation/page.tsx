@@ -1,178 +1,170 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Filter, X, Calendar, User, Building } from "lucide-react"
-import Link from "next/link"
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, Filter, X, Calendar, User, Building } from "lucide-react";
+import Link from "next/link";
 
 interface Bill {
-  bill_id: number
-  title: string
-  description: string
-  introduced_date: string
-  sponsor_name: string
-  state: string
-  bill_number: string
-  status: string
-  subjects?: string[]
-  sponsors?: Array<{
-    party: string
-  }>
+  bill_id: number;
+  bill_number: string;
+  title: string;
+  description: string;
+  introduced_date: string;
+  status: string;
+  sponsor_name: string;
+  sponsors?: Array<{ party: string }>;
+  subjects?: string[];
+  state: string;
 }
 
 interface BillsResponse {
-  bills: Bill[]
-  total: number
-  page: number
-  limit: number
-  hasMore: boolean
+  bills: Bill[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
 }
 
 interface SearchResult {
-  relevance: number
-  state: string
-  bill_number: string
-  bill_id: number
-  change_hash: string
-  url: string
-  text_url: string
-  research_url: string
-  last_action_date: string
-  last_action: string
-  title: string
+  bill_id: number;
+  bill_number: string;
+  state: string;
+  title: string;
+  last_action: string;
+  last_action_date: string;
 }
 
 interface SearchResponse {
-  results: SearchResult[]
-  summary: {
-    count: number
-    page: number
-    total_pages: number
-  }
+  results: SearchResult[];
+  summary: { count: number; page: number; total_pages: number };
 }
 
 export default function LegislationPage() {
-  const [bills, setBills] = useState<Bill[]>([])
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [sortBy, setSortBy] = useState("recent")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [stateFilter, setStateFilter] = useState("ALL")
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(false)
-  const [total, setTotal] = useState(0)
-  const [isSearchMode, setIsSearchMode] = useState(false)
+  const [bills, setBills] = useState<Bill[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("recent");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [isSearchMode, setIsSearchMode] = useState(false);
 
   useEffect(() => {
     if (searchQuery.trim()) {
-      performSearch(1, true)
+      performSearch(1, true);
     } else {
-      fetchBills(1, true)
+      fetchBills(1, true);
     }
-  }, [searchQuery, sortBy, statusFilter, stateFilter])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, sortBy, statusFilter]);
 
   const fetchBills = async (pageNum: number, reset = false) => {
-    setLoading(true)
-    setIsSearchMode(false)
+    setLoading(true);
+    setIsSearchMode(false);
     try {
       const params = new URLSearchParams({
         page: pageNum.toString(),
         limit: "20",
-      })
+      });
+      if (statusFilter !== "all") params.append("status", statusFilter);
 
-      if (statusFilter !== "all") params.append("status", statusFilter)
+      const response = await fetch(`/api/bills?${params}`);
+      const data: BillsResponse = await response.json();
 
-      const response = await fetch(`/api/bills?${params}`)
-      const data: BillsResponse = await response.json()
+      // ✅ Only federal bills
+      const federalBills = data.bills.filter((bill) => bill.state === "US");
 
       if (reset) {
-        setBills(data.bills)
-        setPage(1)
+        setBills(federalBills);
+        setPage(1);
       } else {
-        setBills((prev) => [...prev, ...data.bills])
+        setBills((prev) => [...prev, ...federalBills]);
       }
 
-      setHasMore(data.hasMore)
-      setTotal(data.total)
+      setHasMore(data.hasMore);
+      setTotal(federalBills.length);
     } catch (error) {
-      console.error("Error fetching bills:", error)
+      console.error("Error fetching bills:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const performSearch = async (pageNum: number, reset = false) => {
-    if (!searchQuery.trim()) return
-
-    setLoading(true)
-    setIsSearchMode(true)
+    if (!searchQuery.trim()) return;
+    setLoading(true);
+    setIsSearchMode(true);
     try {
       const params = new URLSearchParams({
         query: searchQuery,
-        state: stateFilter,
+        state: "US", // ✅ federal only
         page: pageNum.toString(),
-      })
+      });
 
-      const response = await fetch(`/api/search?${params}`)
-      const data: SearchResponse = await response.json()
+      const response = await fetch(`/api/search?${params}`);
+      const data: SearchResponse = await response.json();
+
+      const federalResults = data.results.filter((r) => r.state === "US");
 
       if (reset) {
-        setSearchResults(data.results)
-        setPage(1)
+        setSearchResults(federalResults);
+        setPage(1);
       } else {
-        setSearchResults((prev) => [...prev, ...data.results])
+        setSearchResults((prev) => [...prev, ...federalResults]);
       }
 
-      setHasMore(pageNum < data.summary.total_pages)
-      setTotal(data.summary.count)
+      setHasMore(pageNum < data.summary.total_pages);
+      setTotal(federalResults.length);
     } catch (error) {
-      console.error("Error performing search:", error)
+      console.error("Error performing search:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const loadMore = () => {
-    const nextPage = page + 1
-    setPage(nextPage)
-    if (isSearchMode) {
-      performSearch(nextPage, false)
-    } else {
-      fetchBills(nextPage, false)
-    }
-  }
+    const nextPage = page + 1;
+    setPage(nextPage);
+    isSearchMode ? performSearch(nextPage) : fetchBills(nextPage);
+  };
 
   const clearFilters = () => {
-    setSearchQuery("")
-    setStatusFilter("all")
-    setStateFilter("ALL")
-    setSortBy("recent")
-  }
+    setSearchQuery("");
+    setStatusFilter("all");
+    setSortBy("recent");
+  };
 
   const getPartyColor = (party: string) => {
     switch (party?.toLowerCase()) {
       case "democrat":
       case "d":
-        return "bg-blue-500"
+        return "bg-blue-500";
       case "republican":
       case "r":
-        return "bg-red-500"
+        return "bg-red-500";
       case "independent":
       case "i":
-        return "bg-purple-500"
+        return "bg-purple-500";
       default:
-        return "bg-gray-500"
+        return "bg-gray-500";
     }
-  }
+  };
 
-  const activeFiltersCount = [statusFilter].filter((f) => f !== "all").length
-
-  const displayItems = isSearchMode ? searchResults : bills
+  const activeFiltersCount = [statusFilter].filter((f) => f !== "all").length;
+  const displayItems = isSearchMode ? searchResults : bills;
 
   return (
     <div className="min-h-screen bg-black pt-20">
@@ -180,14 +172,18 @@ export default function LegislationPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl md:text-5xl font-black text-white mb-4">
-            CURRENT <span className="text-neon-purple neon-glow font-extralight">LEGISLATION</span>
+            CURRENT{" "}
+            <span className="text-neon-purple neon-glow font-extralight">
+              FEDERAL LEGISLATION
+            </span>
           </h1>
           <p className="text-gray-400 text-lg font-light leading-relaxed">
-            Track bills, discover policy changes, and engage with legislation that matters to you.
+            Track federal bills, discover policy changes, and engage with
+            legislation that matters to you.
           </p>
         </div>
 
-        {/* Search and Filters */}
+        {/* Search + Filters */}
         <div className="mb-8 space-y-4">
           {/* Search Bar */}
           <div className="relative">
@@ -200,60 +196,22 @@ export default function LegislationPage() {
             />
           </div>
 
-          {/* Filters Row */}
+          {/* Status Filter */}
           <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex gap-2">
-              <Select value={stateFilter} onValueChange={setStateFilter}>
+            {!isSearchMode && (
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-40 bg-gray-900 border-gray-700 text-white">
-                  <SelectValue placeholder="State" />
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-900 border-gray-700">
-                  <SelectItem value="ALL" className="text-white hover:bg-neon-purple hover:text-black">
-                    All States
-                  </SelectItem>
-                  <SelectItem value="US" className="text-white hover:bg-neon-purple hover:text-black">
-                    Federal
-                  </SelectItem>
-                  <SelectItem value="CA" className="text-white hover:bg-neon-purple hover:text-black">
-                    California
-                  </SelectItem>
-                  <SelectItem value="NY" className="text-white hover:bg-neon-purple hover:text-black">
-                    New York
-                  </SelectItem>
-                  <SelectItem value="TX" className="text-white hover:bg-neon-purple hover:text-black">
-                    Texas
-                  </SelectItem>
-                  <SelectItem value="FL" className="text-white hover:bg-neon-purple hover:text-black">
-                    Florida
-                  </SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="introduced">Introduced</SelectItem>
+                  <SelectItem value="committee">Committee</SelectItem>
+                  <SelectItem value="passed">Passed</SelectItem>
+                  <SelectItem value="enacted">Enacted</SelectItem>
                 </SelectContent>
               </Select>
-
-              {!isSearchMode && (
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-40 bg-gray-900 border-gray-700 text-white">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-900 border-gray-700">
-                    <SelectItem value="all" className="text-white hover:bg-neon-purple hover:text-black">
-                      All Status
-                    </SelectItem>
-                    <SelectItem value="introduced" className="text-white hover:bg-neon-purple hover:text-black">
-                      Introduced
-                    </SelectItem>
-                    <SelectItem value="committee" className="text-white hover:bg-neon-purple hover:text-black">
-                      Committee
-                    </SelectItem>
-                    <SelectItem value="passed" className="text-white hover:bg-neon-purple hover:text-black">
-                      Passed
-                    </SelectItem>
-                    <SelectItem value="enacted" className="text-white hover:bg-neon-purple hover:text-black">
-                      Enacted
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
+            )}
 
             {/* Active Filters & Clear */}
             <div className="flex items-center gap-2">
@@ -288,101 +246,92 @@ export default function LegislationPage() {
             {loading
               ? "Loading..."
               : isSearchMode
-                ? `Search results: ${searchResults.length} of ${total} bills`
-                : `Showing ${bills.length} of ${total} bills`}
+              ? `Search results: ${searchResults.length} of ${total} bills`
+              : `Showing ${bills.length} of ${total} bills`}
           </div>
         </div>
 
         {/* Bills Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {(isSearchMode ? searchResults : bills).map((item) => {
-            const bill = isSearchMode
-              ? {
-                  bill_id: item.bill_id,
-                  title: item.title,
-                  description: item.last_action || "No description available",
-                  introduced_date: item.last_action_date,
-                  sponsor_name: "Unknown Sponsor",
-                  state: item.state,
-                  bill_number: item.bill_number,
-                  status: "Unknown",
-                  subjects: [],
-                  sponsors: [],
-                }
-              : item
-
-            return (
-              <Card
-                key={bill.bill_id}
-                className="bg-gray-900 border-gray-800 hover:border-advoline-orange transition-colors"
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      {/* Show sponsor party if available */}
-                      {bill.sponsors?.[0]?.party && (
-                        <Badge className={`${getPartyColor(bill.sponsors[0].party)} text-white text-xs`}>
-                          {bill.sponsors[0].party}
-                        </Badge>
-                      )}
-                      {/* Show first subject as primary topic */}
-                      {bill.subjects?.[0] && (
-                        <Badge className="bg-neon-purple text-white text-xs">{bill.subjects[0]}</Badge>
-                      )}
-                    </div>
-                    <Badge className="bg-gray-700 text-gray-300 text-xs">{bill.status}</Badge>
+          {displayItems.map((bill) => (
+            <Card
+              key={bill.bill_id}
+              className="bg-gray-900 border-gray-800 hover:border-advoline-orange transition-colors"
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    {bill.sponsors?.[0]?.party && (
+                      <Badge
+                        className={`${getPartyColor(
+                          bill.sponsors[0].party
+                        )} text-white text-xs`}
+                      >
+                        {bill.sponsors[0].party}
+                      </Badge>
+                    )}
+                    {bill.subjects?.[0] && (
+                      <Badge className="bg-neon-purple text-white text-xs">
+                        {bill.subjects[0]}
+                      </Badge>
+                    )}
                   </div>
-                  <CardTitle className="text-white text-lg font-bold leading-tight">
-                    <Link href={`/bill/${bill.bill_id}`} className="hover:text-advoline-orange transition-colors">
-                      {bill.title}
-                    </Link>
-                  </CardTitle>
-                </CardHeader>
+                  <Badge className="bg-gray-700 text-gray-300 text-xs">
+                    {bill.status}
+                  </Badge>
+                </div>
+                <CardTitle className="text-white text-lg font-bold leading-tight">
+                  <Link
+                    href={`/bill/${bill.bill_id}`}
+                    className="hover:text-advoline-orange transition-colors"
+                  >
+                    {bill.title}
+                  </Link>
+                </CardTitle>
+              </CardHeader>
 
-                <CardContent>
-                  {/* Bill Number & Date */}
-                  <div className="flex items-center gap-4 mb-3 text-gray-400 text-sm">
-                    <div className="flex items-center gap-1">
-                      <Building className="h-3 w-3" />
-                      <span>{bill.bill_number}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      <span>{new Date(bill.introduced_date).toLocaleDateString()}</span>
-                    </div>
+              <CardContent>
+                <div className="flex items-center gap-4 mb-3 text-gray-400 text-sm">
+                  <div className="flex items-center gap-1">
+                    <Building className="h-3 w-3" />
+                    <span>{bill.bill_number}</span>
                   </div>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    <span>
+                      {new Date(bill.introduced_date).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
 
-                  {/* Sponsor */}
-                  {bill.sponsor_name !== "Unknown Sponsor" && (
+                {bill.sponsor_name &&
+                  bill.sponsor_name !== "Unknown Sponsor" && (
                     <div className="flex items-center gap-1 mb-3 text-gray-400 text-sm">
                       <User className="h-3 w-3" />
                       <span>Sponsored by {bill.sponsor_name}</span>
                     </div>
                   )}
 
-                  {/* Description */}
-                  <p className="text-gray-400 text-sm mb-4 leading-relaxed line-clamp-3">
-                    {bill.description.substring(0, 150)}...
-                  </p>
+                <p className="text-gray-400 text-sm mb-4 leading-relaxed line-clamp-3">
+                  {bill.description
+                    ? bill.description.substring(0, 150)
+                    : "No description available."}
+                  ...
+                </p>
 
-                  {/* Actions */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-gray-400 text-sm">
-                      <span className="text-xs">{bill.state}</span>
-                      {isSearchMode && (
-                        <Badge className="bg-neon-purple/20 text-neon-purple text-xs">Search Result</Badge>
-                      )}
-                    </div>
-                    <Link href={`/bill/${bill.bill_id}`}>
-                      <Button size="sm" className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold">
-                        View Bill
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
+                <div className="flex justify-end">
+                  <Link href={`/bill/${bill.bill_id}`}>
+                    <Button
+                      size="sm"
+                      className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold"
+                    >
+                      View Bill
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Load More */}
@@ -402,8 +351,12 @@ export default function LegislationPage() {
         {!loading && displayItems.length === 0 && (
           <div className="text-center py-12">
             <Building className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-white mb-2">No bills found</h3>
-            <p className="text-gray-400 mb-6">Try adjusting your search or filters</p>
+            <h3 className="text-xl font-bold text-white mb-2">
+              No bills found
+            </h3>
+            <p className="text-gray-400 mb-6">
+              Try adjusting your search or filters
+            </p>
             <Button
               onClick={clearFilters}
               className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold"
@@ -414,5 +367,5 @@ export default function LegislationPage() {
         )}
       </div>
     </div>
-  )
+  );
 }
