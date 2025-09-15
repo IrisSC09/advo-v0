@@ -9,6 +9,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Configure for Replit environment - allows cross-origin requests in development
+  allowedDevOrigins: ['*.replit.dev'],
 }
 
 export default nextConfig
