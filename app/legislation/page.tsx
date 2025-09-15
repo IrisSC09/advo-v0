@@ -43,6 +43,10 @@ interface SearchResult {
   title: string;
   last_action: string;
   last_action_date: string;
+  status: string;
+  introduced_date: string;
+  sponsor_name: string;
+  description?: string;
 }
 
 interface SearchResponse {
@@ -261,7 +265,7 @@ export default function LegislationPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    {bill.sponsors?.[0]?.party && (
+                    {'sponsors' in bill && bill.sponsors?.[0]?.party && (
                       <Badge
                         className={`${getPartyColor(
                           bill.sponsors[0].party
@@ -270,7 +274,7 @@ export default function LegislationPage() {
                         {bill.sponsors[0].party}
                       </Badge>
                     )}
-                    {bill.subjects?.[0] && (
+                    {'subjects' in bill && bill.subjects?.[0] && (
                       <Badge className="bg-neon-purple text-white text-xs">
                         {bill.subjects[0]}
                       </Badge>

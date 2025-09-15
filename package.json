@@ -6,7 +6,8 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start -H 0.0.0.0 -p $PORT",
+    "start:prod": "next start -H 0.0.0.0 -p $PORT"
   },
   "dependencies": {
     "@ai-sdk/google": "latest",
@@ -58,6 +59,7 @@
     "react-hook-form": "^7.54.1",
     "react-resizable-panels": "^2.1.7",
     "recharts": "2.15.0",
+    "server-only": "^0.0.1",
     "sonner": "^1.7.1",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
