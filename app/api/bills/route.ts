@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get("status")
 
   try {
-    let bills = await fetchFromLegiScan(page, limit, query || undefined)
+    let bills = await fetchFromLegiScan(page, limit, query)
 
     // Apply filters
     if (status && status !== "all") {

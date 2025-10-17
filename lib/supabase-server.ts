@@ -1,4 +1,3 @@
-import 'server-only'
 import { createClient } from "@supabase/supabase-js"
 
 export function createServerClient() {
@@ -16,3 +15,5 @@ export function createServerClient() {
     },
   })
 }
+
+export const supabase = createServerClient()

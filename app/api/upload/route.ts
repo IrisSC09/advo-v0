@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase-server"
+import { supabase } from "@/lib/supabase-server"
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,9 +42,6 @@ export async function POST(request: NextRequest) {
     // Convert File to ArrayBuffer
     const arrayBuffer = await file.arrayBuffer()
     const buffer = new Uint8Array(arrayBuffer)
-
-    // Create Supabase client for this request
-    const supabase = createServerClient()
 
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage.from("thread-files").upload(fileName, buffer, {

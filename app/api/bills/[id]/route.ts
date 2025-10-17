@@ -179,10 +179,7 @@ async function fetchRollCall(rollCallId: string): Promise<any | null> {
   }
 }
 
-export async function GET(
-  request: NextRequest, 
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const searchParams = request.nextUrl.searchParams
   const action = searchParams.get("action")
   const amendmentId = searchParams.get("amendment_id")
@@ -190,9 +187,6 @@ export async function GET(
   const rollCallId = searchParams.get("roll_call_id")
 
   try {
-    // Await params since it's a Promise in Next.js 15
-    const { id } = await params
-
     // Handle specific actions
     if (action === "getAmendment" && amendmentId) {
       const amendment = await fetchAmendment(amendmentId)
@@ -210,7 +204,7 @@ export async function GET(
     }
 
     // Default: get bill details
-    const bill = await fetchBillFromLegiScan(id)
+    const bill = await fetchBillFromLegiScan(params.id)
 
     if (!bill) {
       return NextResponse.json({ error: "Bill not found" }, { status: 404 })

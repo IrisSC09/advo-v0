@@ -69,8 +69,7 @@ export default function ThreadDetailPage() {
 
   const fetchThread = async () => {
     try {
-      // First try to fetch the thread with bills relationship
-      let { data, error } = await supabase
+      const { data, error } = await supabase
         .from("threads")
         .select(`
           *,
@@ -80,29 +79,7 @@ export default function ThreadDetailPage() {
         .eq("id", params.id)
         .single()
 
-      // If there's a foreign key relationship error, fall back to fetching without bills
-      if (error && error.message?.includes("relationship") || error?.code === "PGRST200") {
-        console.warn("Database not set up yet, using mock data:", error.message)
-        const fallbackResult = await supabase
-          .from("threads")
-          .select(`
-            *,
-            profiles:author_id (username, full_name, avatar_url)
-          `)
-          .eq("id", params.id)
-          .single()
-
-        if (fallbackResult.error) throw fallbackResult.error
-        
-        // Add a mock bills relationship for display
-        data = {
-          ...fallbackResult.data,
-          bills: { title: `Bill ${fallbackResult.data.bill_id}` }
-        }
-      } else if (error) {
-        throw error
-      }
-
+      if (error) throw error
       setThread(data)
     } catch (error) {
       console.error("Error fetching thread:", error)
@@ -300,7 +277,7 @@ export default function ThreadDetailPage() {
             {/* Related Bill */}
             <div className="mb-6">
               <Link href={`/bill/${thread.bill_id}`} className="text-neon-purple hover:text-neon-purple-bright text-sm">
-                Related to: {thread.bills?.title || `Bill ${thread.bill_id}`}
+                Related to: {thread.bills.title}
               </Link>
             </div>
 

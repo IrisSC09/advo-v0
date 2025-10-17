@@ -1,11 +1,11 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   ArrowLeft,
   Share2,
@@ -24,173 +24,215 @@ import {
   Copy,
   Check,
   X,
-} from "lucide-react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
+  Sparkles,
+  Loader2,
+} from "lucide-react"
+import Link from "next/link"
+import { useParams } from "next/navigation"
 
 interface BillDetail {
-  bill_id: number;
-  title: string;
-  description: string;
-  introduced_date: string;
-  sponsor_name: string;
-  state: string;
-  bill_number: string;
-  status: string;
-  status_date?: string;
+  bill_id: number
+  title: string
+  description: string
+  introduced_date: string
+  sponsor_name: string
+  state: string
+  bill_number: string
+  status: string
+  status_date?: string
   progress?: Array<{
-    date: string;
-    event: string;
-  }>;
-  committee?: string;
-  next_action?: string;
+    date: string
+    event: string
+  }>
+  committee?: string
+  next_action?: string
   sponsors?: Array<{
-    people_id: number;
-    name: string;
-    first_name: string;
-    last_name: string;
-    party: string;
-    role: string;
-  }>;
-  subjects?: string[];
+    people_id: number
+    name: string
+    first_name: string
+    last_name: string
+    party: string
+    role: string
+  }>
+  subjects?: string[]
   history?: Array<{
-    date: string;
-    action: string;
-    chamber: string;
-  }>;
+    date: string
+    action: string
+    chamber: string
+  }>
   votes?: Array<{
-    roll_call_id: number;
-    date: string;
-    desc: string;
-    yea: number;
-    nay: number;
-    nv: number;
-    absent: number;
-    total: number;
-    passed: number;
-  }>;
+    roll_call_id: number
+    date: string
+    desc: string
+    yea: number
+    nay: number
+    nv: number
+    absent: number
+    total: number
+    passed: number
+  }>
   texts?: Array<{
-    doc_id: number;
-    type: string;
-    mime: string;
-    url: string;
-    state_link: string;
-    text_size: number;
-  }>;
+    doc_id: number
+    type: string
+    mime: string
+    url: string
+    state_link: string
+    text_size: number
+  }>
   amendments?: Array<{
-    amendment_id: number;
-    chamber: string;
-    number: string;
-    description: string;
-    status: string;
-  }>;
+    amendment_id: number
+    chamber: string
+    number: string
+    description: string
+    status: string
+  }>
   supplements?: Array<{
-    supplement_id: number;
-    type: string;
-    title: string;
-    description: string;
-  }>;
+    supplement_id: number
+    type: string
+    title: string
+    description: string
+  }>
 }
 
 interface Thread {
-  id: string;
-  title: string;
-  content: string;
-  type: string;
-  author_id: string;
-  likes_count: number;
-  shares_count: number;
-  comments_count: number;
-  created_at: string;
+  id: string
+  title: string
+  content: string
+  type: string
+  author_id: string
+  likes_count: number
+  shares_count: number
+  comments_count: number
+  created_at: string
   profiles: {
-    username: string;
-    avatar_url: string | null;
-  };
+    username: string
+    avatar_url: string | null
+  }
+}
+
+interface AISummary {
+  summary: string
+  keyPoints: string[]
+  impact: string
+  controversialAspects: string
 }
 
 export default function BillDetailPage() {
-  const params = useParams();
-  const [bill, setBill] = useState<BillDetail | null>(null);
-  const [threads, setThreads] = useState<Thread[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [threadsLoading, setThreadsLoading] = useState(true);
-  const [showAllSponsors, setShowAllSponsors] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const params = useParams()
+  const [bill, setBill] = useState<BillDetail | null>(null)
+  const [threads, setThreads] = useState<Thread[]>([])
+  const [aiSummary, setAiSummary] = useState<AISummary | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [threadsLoading, setThreadsLoading] = useState(true)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [showAllSponsors, setShowAllSponsors] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    fetchBillDetail();
-    fetchThreads();
-  }, [params.id]);
+    fetchBillDetail()
+    fetchThreads()
+  }, [params.id])
 
   const fetchBillDetail = async () => {
     try {
-      const response = await fetch(`/api/bills/${params.id}`);
+      const response = await fetch(`/api/bills/${params.id}`)
       if (response.ok) {
-        const data = await response.json();
-        setBill(data);
+        const data = await response.json()
+        setBill(data)
+        // Automatically generate AI summary after bill is loaded
+        if (data.description) {
+          generateAISummary(data)
+        }
       }
     } catch (error) {
-      console.error("Error fetching bill detail:", error);
+      console.error("Error fetching bill detail:", error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const fetchThreads = async () => {
     try {
-      const response = await fetch(`/api/threads?bill_id=${params.id}`);
+      const response = await fetch(`/api/threads?bill_id=${params.id}`)
       if (response.ok) {
-        const data = await response.json();
-        setThreads(data.threads || []);
+        const data = await response.json()
+        setThreads(data.threads || [])
       }
     } catch (error) {
-      console.error("Error fetching threads:", error);
+      console.error("Error fetching threads:", error)
     } finally {
-      setThreadsLoading(false);
+      setThreadsLoading(false)
     }
-  };
+  }
+
+  const generateAISummary = async (billData: BillDetail) => {
+    setAiLoading(true)
+    try {
+      const response = await fetch("/api/ai/summarize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          billText: billData.description,
+          billTitle: billData.title,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setAiSummary(data)
+      }
+    } catch (error) {
+      console.error("Error generating AI summary:", error)
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "zine":
-        return FileText;
+        return FileText
       case "music":
-        return Music;
+        return Music
       case "art":
-        return Palette;
+        return Palette
       case "blog":
-        return FileText;
+        return FileText
       default:
-        return FileText;
+        return FileText
     }
-  };
+  }
 
   const getTypeColor = (type: string) => {
     switch (type) {
       case "zine":
-        return "bg-purple-500";
+        return "bg-purple-500"
       case "music":
-        return "bg-green-500";
+        return "bg-green-500"
       case "art":
-        return "bg-pink-500";
+        return "bg-pink-500"
       case "blog":
-        return "bg-blue-500";
+        return "bg-blue-500"
       default:
-        return "bg-gray-500";
+        return "bg-gray-500"
     }
-  };
+  }
 
   const getPartyColor = (party: string) => {
     switch (party?.toLowerCase()) {
       case "d":
-        return "bg-blue-500";
+        return "bg-blue-500"
       case "r":
-        return "bg-red-500";
+        return "bg-red-500"
       case "i":
-        return "bg-purple-500";
+        return "bg-purple-500"
+      default:
+        return "bg-gray-500"
     }
-  };
+  }
 
   const getSubjectColor = (subject: string, index: number) => {
     const colors = [
@@ -204,40 +246,39 @@ export default function BillDetailPage() {
       "bg-orange-500",
       "bg-teal-500",
       "bg-cyan-500",
-    ];
+    ]
 
-    // Use a simple hash function to consistently assign colors based on subject name
-    let hash = 0;
+    let hash = 0
     for (let i = 0; i < subject.length; i++) {
-      hash = subject.charCodeAt(i) + ((hash << 5) - hash);
+      hash = subject.charCodeAt(i) + ((hash << 5) - hash)
     }
-    return colors[Math.abs(hash) % colors.length];
-  };
+    return colors[Math.abs(hash) % colors.length]
+  }
 
   const formatChamber = (chamber: string) => {
     switch (chamber?.toLowerCase()) {
       case "senate":
-        return "Senate";
+        return "Senate"
       case "house":
-        return "House of Representatives";
+        return "House of Representatives"
       default:
-        return chamber;
+        return chamber
     }
-  };
+  }
 
   const handleCopyLink = async () => {
-    const url = window.location.href;
+    const url = window.location.href
     try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      console.error("Failed to copy link:", error);
+      console.error("Failed to copy link:", error)
     }
-  };
+  }
 
   const ShareModal = () => {
-    if (!showShareModal) return null;
+    if (!showShareModal) return null
 
     return (
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -258,9 +299,7 @@ export default function BillDetailPage() {
           <CardContent>
             <div className="space-y-4">
               <div>
-                <label className="text-white text-sm font-medium mb-2 block">
-                  Share Link
-                </label>
+                <label className="text-white text-sm font-medium mb-2 block">Share Link</label>
                 <div className="flex gap-2">
                   <div className="flex-1 p-2 bg-gray-800 rounded border border-gray-700 text-gray-300 text-sm break-all">
                     {window.location.href}
@@ -269,32 +308,24 @@ export default function BillDetailPage() {
                     onClick={handleCopyLink}
                     className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold"
                   >
-                    {copied ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
                 </div>
-                {copied && (
-                  <p className="text-green-400 text-sm mt-1">
-                    Link copied to clipboard!
-                  </p>
-                )}
+                {copied && <p className="text-green-400 text-sm mt-1">Link copied to clipboard!</p>}
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
-    );
-  };
+    )
+  }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-black pt-20 flex items-center justify-center">
         <div className="text-white">Loading bill details...</div>
       </div>
-    );
+    )
   }
 
   if (!bill) {
@@ -309,76 +340,47 @@ export default function BillDetailPage() {
           </Link>
         </div>
       </div>
-    );
+    )
   }
 
-  const latestHistoryItem = bill.history?.[0];
-  const displayedSponsors = showAllSponsors
-    ? bill.sponsors
-    : bill.sponsors?.slice(0, 3);
-  const hasMoreSponsors = bill.sponsors && bill.sponsors.length > 3;
+  const latestHistoryItem = bill.history?.[0]
+  const displayedSponsors = showAllSponsors ? bill.sponsors : bill.sponsors?.slice(0, 3)
+  const hasMoreSponsors = bill.sponsors && bill.sponsors.length > 3
 
   return (
     <div className="min-h-screen bg-black pt-20">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Back Button */}
-        <Link
-          href="/legislation"
-          className="inline-flex items-center text-gray-400 hover:text-white mb-6"
-        >
+        <Link href="/legislation" className="inline-flex items-center text-gray-400 hover:text-white mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Legislation
         </Link>
 
-        {/* Bill Header */}
         <Card className="bg-gray-900 border-gray-800 mb-8">
           <CardHeader>
             <div className="flex justify-between items-start">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-3">
-                  {/* Show sponsor party if available */}
                   {bill.sponsors?.[0]?.party && (
-                    <Badge
-                      className={`${getPartyColor(
-                        bill.sponsors[0].party
-                      )} text-white`}
-                    >
+                    <Badge className={`${getPartyColor(bill.sponsors[0].party)} text-white`}>
                       {bill.sponsors[0].party}
                     </Badge>
                   )}
-                  {/* Show subjects with different colors */}
                   {bill.subjects?.slice(0, 3).map((subject, index) => (
-                    <Badge
-                      key={index}
-                      className={`${getSubjectColor(
-                        subject,
-                        index
-                      )} text-white`}
-                    >
+                    <Badge key={index} className={`${getSubjectColor(subject, index)} text-white`}>
                       {subject}
                     </Badge>
                   ))}
-                  <Badge className="bg-gray-700 text-gray-300">
-                    {bill.status}
-                  </Badge>
+                  <Badge className="bg-gray-700 text-gray-300">{bill.status}</Badge>
                 </div>
-                <h1 className="text-3xl font-black text-white mb-2">
-                  {bill.title}
-                </h1>
+                <h1 className="text-3xl font-black text-white mb-2">{bill.title}</h1>
                 <p className="text-gray-400 mb-4">
-                  {bill.bill_number} • Sponsored by {bill.sponsor_name} •
-                  Introduced{" "}
+                  {bill.bill_number} • Sponsored by {bill.sponsor_name} • Introduced{" "}
                   {new Date(bill.introduced_date).toLocaleDateString()}
                 </p>
-                <p className="text-gray-300 leading-relaxed">
-                  {bill.description}
-                </p>
+                <p className="text-gray-300 leading-relaxed">{bill.description}</p>
               </div>
               <div className="flex gap-2 ml-4">
-                <Button
-                  variant="outline"
-                  className="border-gray-600 text-gray-400 hover:text-white bg-transparent"
-                >
+                <Button variant="outline" className="border-gray-600 text-gray-400 hover:text-white bg-transparent">
                   <Bookmark className="h-4 w-4" />
                 </Button>
                 <Button
@@ -394,7 +396,6 @@ export default function BillDetailPage() {
         </Card>
 
         <div className="grid lg:grid-cols-4 gap-8">
-          {/* Main Content */}
           <div className="lg:col-span-3">
             <Tabs defaultValue="overview" className="w-full">
               <TabsList className="grid w-full grid-cols-6 bg-gray-900 border-gray-800">
@@ -436,8 +437,88 @@ export default function BillDetailPage() {
                 </TabsTrigger>
               </TabsList>
 
-              {/* Overview Tab */}
               <TabsContent value="overview" className="space-y-6">
+                {/* AI Summary Card */}
+                <Card className="bg-gradient-to-br from-purple-900/20 to-pink-900/20 border-purple-500/30">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center">
+                      <Sparkles className="h-5 w-5 text-purple-400 mr-2" />
+                      AI-Powered Analysis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {aiLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 text-purple-400 animate-spin" />
+                        <span className="ml-3 text-gray-300">Analyzing bill with AI...</span>
+                      </div>
+                    ) : aiSummary ? (
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-white font-semibold mb-2 flex items-center">
+                            <span className="text-purple-400 mr-2">📄</span>
+                            Summary
+                          </h4>
+                          <p className="text-gray-300 leading-relaxed">{aiSummary.summary}</p>
+                        </div>
+
+                        <div>
+                          <h4 className="text-white font-semibold mb-2 flex items-center">
+                            <span className="text-purple-400 mr-2">🎯</span>
+                            Key Points
+                          </h4>
+                          <ul className="space-y-2">
+                            {aiSummary.keyPoints.map((point, index) => (
+                              <li key={index} className="text-gray-300 flex items-start">
+                                <span className="text-advoline-orange mr-2 mt-1">•</span>
+                                {point}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {aiSummary.impact && (
+                          <div>
+                            <h4 className="text-white font-semibold mb-2 flex items-center">
+                              <span className="text-purple-400 mr-2">💡</span>
+                              Potential Impact
+                            </h4>
+                            <p className="text-gray-300 leading-relaxed">{aiSummary.impact}</p>
+                          </div>
+                        )}
+
+                        {aiSummary.controversialAspects && (
+                          <div>
+                            <h4 className="text-white font-semibold mb-2 flex items-center">
+                              <span className="text-purple-400 mr-2">⚠️</span>
+                              Notable Aspects
+                            </h4>
+                            <p className="text-gray-300 leading-relaxed">{aiSummary.controversialAspects}</p>
+                          </div>
+                        )}
+
+                        <div className="pt-2 border-t border-gray-700">
+                          <p className="text-xs text-gray-500 flex items-center">
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            Powered by AI • Analysis may not be 100% accurate
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-gray-400 mb-4">AI analysis unavailable</p>
+                        <Button
+                          onClick={() => generateAISummary(bill)}
+                          className="bg-purple-600 hover:bg-purple-700 text-white"
+                        >
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Generate AI Summary
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
                 {/* Sponsors */}
                 {bill.sponsors && bill.sponsors.length > 0 && (
                   <Card className="bg-gray-900 border-gray-800">
@@ -450,26 +531,13 @@ export default function BillDetailPage() {
                     <CardContent>
                       <div className="space-y-3">
                         {displayedSponsors?.map((sponsor, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between p-3 bg-gray-800 rounded-lg"
-                          >
+                          <div key={index} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
                             <div>
-                              <p className="text-white font-medium">
-                                {sponsor.name}
-                              </p>
-                              <p className="text-gray-400 text-sm">
-                                {sponsor.role}
-                              </p>
+                              <p className="text-white font-medium">{sponsor.name}</p>
+                              <p className="text-gray-400 text-sm">{sponsor.role}</p>
                             </div>
                             {sponsor.party && (
-                              <Badge
-                                className={`${getPartyColor(
-                                  sponsor.party
-                                )} text-white`}
-                              >
-                                {sponsor.party}
-                              </Badge>
+                              <Badge className={`${getPartyColor(sponsor.party)} text-white`}>{sponsor.party}</Badge>
                             )}
                           </div>
                         ))}
@@ -499,20 +567,13 @@ export default function BillDetailPage() {
                     <CardContent>
                       <div className="space-y-3">
                         {bill.history.slice(0, 10).map((item, index) => (
-                          <div
-                            key={index}
-                            className="flex gap-4 p-3 bg-gray-800 rounded-lg"
-                          >
+                          <div key={index} className="flex gap-4 p-3 bg-gray-800 rounded-lg">
                             <div className="text-gray-400 text-sm min-w-[100px]">
                               {new Date(item.date).toLocaleDateString()}
                             </div>
                             <div className="flex-1">
                               <p className="text-white">{item.action}</p>
-                              {item.chamber && (
-                                <p className="text-gray-400 text-sm">
-                                  {formatChamber(item.chamber)}
-                                </p>
-                              )}
+                              {item.chamber && <p className="text-gray-400 text-sm">{formatChamber(item.chamber)}</p>}
                             </div>
                           </div>
                         ))}
@@ -535,17 +596,11 @@ export default function BillDetailPage() {
                     {bill.texts && bill.texts.length > 0 ? (
                       <div className="space-y-3">
                         {bill.texts.map((text, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between p-3 bg-gray-800 rounded-lg"
-                          >
+                          <div key={index} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
                             <div>
-                              <p className="text-white font-medium">
-                                {text.type}
-                              </p>
+                              <p className="text-white font-medium">{text.type}</p>
                               <p className="text-gray-400 text-sm">
-                                {text.mime} •{" "}
-                                {(text.text_size / 1024).toFixed(1)}KB
+                                {text.mime} • {(text.text_size / 1024).toFixed(1)}KB
                               </p>
                             </div>
                             <div className="flex gap-2">
@@ -555,11 +610,7 @@ export default function BillDetailPage() {
                                   className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold"
                                   asChild
                                 >
-                                  <a
-                                    href={text.state_link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                  >
+                                  <a href={text.state_link} target="_blank" rel="noopener noreferrer">
                                     View Official Text
                                     <ExternalLink className="h-3 w-3 ml-1" />
                                   </a>
@@ -570,9 +621,7 @@ export default function BillDetailPage() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-gray-400">
-                        No text versions available
-                      </p>
+                      <p className="text-gray-400">No text versions available</p>
                     )}
                   </CardContent>
                 </Card>
@@ -591,52 +640,31 @@ export default function BillDetailPage() {
                     {bill.votes && bill.votes.length > 0 ? (
                       <div className="space-y-4">
                         {bill.votes.map((vote, index) => (
-                          <div
-                            key={index}
-                            className="p-4 bg-gray-800 rounded-lg"
-                          >
+                          <div key={index} className="p-4 bg-gray-800 rounded-lg">
                             <div className="flex justify-between items-start mb-3">
                               <div>
-                                <p className="text-white font-medium">
-                                  {vote.desc}
-                                </p>
-                                <p className="text-gray-400 text-sm">
-                                  {new Date(vote.date).toLocaleDateString()}
-                                </p>
+                                <p className="text-white font-medium">{vote.desc}</p>
+                                <p className="text-gray-400 text-sm">{new Date(vote.date).toLocaleDateString()}</p>
                               </div>
-                              <Badge
-                                className={
-                                  vote.passed ? "bg-green-500" : "bg-red-500"
-                                }
-                              >
+                              <Badge className={vote.passed ? "bg-green-500" : "bg-red-500"}>
                                 {vote.passed ? "PASSED" : "FAILED"}
                               </Badge>
                             </div>
                             <div className="grid grid-cols-4 gap-4 text-center">
                               <div>
-                                <p className="text-green-400 font-bold text-lg">
-                                  {vote.yea}
-                                </p>
+                                <p className="text-green-400 font-bold text-lg">{vote.yea}</p>
                                 <p className="text-gray-400 text-sm">Yea</p>
                               </div>
                               <div>
-                                <p className="text-red-400 font-bold text-lg">
-                                  {vote.nay}
-                                </p>
+                                <p className="text-red-400 font-bold text-lg">{vote.nay}</p>
                                 <p className="text-gray-400 text-sm">Nay</p>
                               </div>
                               <div>
-                                <p className="text-gray-400 font-bold text-lg">
-                                  {vote.nv}
-                                </p>
-                                <p className="text-gray-400 text-sm">
-                                  Not Voting
-                                </p>
+                                <p className="text-gray-400 font-bold text-lg">{vote.nv}</p>
+                                <p className="text-gray-400 text-sm">Not Voting</p>
                               </div>
                               <div>
-                                <p className="text-gray-400 font-bold text-lg">
-                                  {vote.absent}
-                                </p>
+                                <p className="text-gray-400 font-bold text-lg">{vote.absent}</p>
                                 <p className="text-gray-400 text-sm">Absent</p>
                               </div>
                             </div>
@@ -663,23 +691,15 @@ export default function BillDetailPage() {
                     {bill.amendments && bill.amendments.length > 0 ? (
                       <div className="space-y-3">
                         {bill.amendments.map((amendment, index) => (
-                          <div
-                            key={index}
-                            className="p-3 bg-gray-800 rounded-lg"
-                          >
+                          <div key={index} className="p-3 bg-gray-800 rounded-lg">
                             <div className="flex justify-between items-start">
                               <div>
                                 <p className="text-white font-medium">
-                                  {formatChamber(amendment.chamber)} Amendment{" "}
-                                  {amendment.number}
+                                  {formatChamber(amendment.chamber)} Amendment {amendment.number}
                                 </p>
-                                <p className="text-gray-300 text-sm mt-1">
-                                  {amendment.description}
-                                </p>
+                                <p className="text-gray-300 text-sm mt-1">{amendment.description}</p>
                               </div>
-                              <Badge className="bg-gray-700 text-gray-300">
-                                {amendment.status}
-                              </Badge>
+                              <Badge className="bg-gray-700 text-gray-300">{amendment.status}</Badge>
                             </div>
                           </div>
                         ))}
@@ -704,20 +724,11 @@ export default function BillDetailPage() {
                     {bill.supplements && bill.supplements.length > 0 ? (
                       <div className="space-y-3">
                         {bill.supplements.map((supplement, index) => (
-                          <div
-                            key={index}
-                            className="p-3 bg-gray-800 rounded-lg"
-                          >
-                            <p className="text-white font-medium">
-                              {supplement.title}
-                            </p>
-                            <p className="text-gray-400 text-sm">
-                              {supplement.type}
-                            </p>
+                          <div key={index} className="p-3 bg-gray-800 rounded-lg">
+                            <p className="text-white font-medium">{supplement.title}</p>
+                            <p className="text-gray-400 text-sm">{supplement.type}</p>
                             {supplement.description && (
-                              <p className="text-gray-300 text-sm mt-1">
-                                {supplement.description}
-                              </p>
+                              <p className="text-gray-300 text-sm mt-1">{supplement.description}</p>
                             )}
                           </div>
                         ))}
@@ -734,9 +745,7 @@ export default function BillDetailPage() {
                 <Card className="bg-gray-900 border-gray-800">
                   <CardHeader>
                     <div className="flex justify-between items-center">
-                      <CardTitle className="text-white">
-                        Community Threads ({threads.length})
-                      </CardTitle>
+                      <CardTitle className="text-white">Community Threads ({threads.length})</CardTitle>
                       <Link href={`/bill/${bill.bill_id}/create-thread`}>
                         <Button className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold">
                           Create Thread
@@ -746,26 +755,18 @@ export default function BillDetailPage() {
                   </CardHeader>
                   <CardContent>
                     {threadsLoading ? (
-                      <div className="text-gray-400 text-center py-8">
-                        Loading threads...
-                      </div>
+                      <div className="text-gray-400 text-center py-8">Loading threads...</div>
                     ) : threads.length > 0 ? (
                       <div className="space-y-4">
                         {threads.map((thread) => {
-                          const TypeIcon = getTypeIcon(thread.type);
+                          const TypeIcon = getTypeIcon(thread.type)
                           return (
-                            <Card
-                              key={thread.id}
-                              className="bg-gray-800 border-gray-700"
-                            >
+                            <Card key={thread.id} className="bg-gray-800 border-gray-700">
                               <CardContent className="p-4">
                                 <div className="flex gap-4">
                                   <Avatar className="h-10 w-10">
                                     <AvatarImage
-                                      src={
-                                        thread.profiles.avatar_url ||
-                                        "/placeholder.svg"
-                                      }
+                                      src={thread.profiles.avatar_url || "/placeholder.svg" || "/placeholder.svg"}
                                     />
                                     <AvatarFallback className="bg-advoline-orange text-black">
                                       {thread.profiles.username?.[0]?.toUpperCase()}
@@ -773,38 +774,22 @@ export default function BillDetailPage() {
                                   </Avatar>
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-2">
-                                      <Badge
-                                        className={`${getTypeColor(
-                                          thread.type
-                                        )} text-white text-xs`}
-                                      >
+                                      <Badge className={`${getTypeColor(thread.type)} text-white text-xs`}>
                                         <TypeIcon className="h-3 w-3 mr-1" />
                                         {thread.type}
                                       </Badge>
-                                      <span className="text-gray-400 text-sm">
-                                        by {thread.profiles.username}
-                                      </span>
+                                      <span className="text-gray-400 text-sm">by {thread.profiles.username}</span>
                                       <span className="text-gray-500 text-sm">
-                                        {new Date(
-                                          thread.created_at
-                                        ).toLocaleDateString()}
+                                        {new Date(thread.created_at).toLocaleDateString()}
                                       </span>
                                     </div>
-                                    <h4 className="text-white font-semibold mb-2">
-                                      {thread.title}
-                                    </h4>
-                                    <p className="text-gray-400 text-sm mb-3">
-                                      {thread.content.substring(0, 200)}...
-                                    </p>
+                                    <h4 className="text-white font-semibold mb-2">{thread.title}</h4>
+                                    <p className="text-gray-400 text-sm mb-3">{thread.content.substring(0, 200)}...</p>
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-4 text-gray-400 text-sm">
                                         <span>{thread.likes_count} likes</span>
-                                        <span>
-                                          {thread.shares_count} shares
-                                        </span>
-                                        <span>
-                                          {thread.comments_count} comments
-                                        </span>
+                                        <span>{thread.shares_count} shares</span>
+                                        <span>{thread.comments_count} comments</span>
                                       </div>
                                       <Link href={`/threads/${thread.id}`}>
                                         <Button
@@ -820,15 +805,13 @@ export default function BillDetailPage() {
                                 </div>
                               </CardContent>
                             </Card>
-                          );
+                          )
                         })}
                       </div>
                     ) : (
                       <div className="text-center py-8">
                         <FileText className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                        <p className="text-gray-400 mb-4">
-                          No threads yet for this bill
-                        </p>
+                        <p className="text-gray-400 mb-4">No threads yet for this bill</p>
                         <Link href={`/bill/${bill.bill_id}/create-thread`}>
                           <Button className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold">
                             Be the First to Create a Thread
@@ -853,13 +836,10 @@ export default function BillDetailPage() {
                 {latestHistoryItem ? (
                   <div>
                     <span className="text-gray-400 text-sm">Last Update:</span>
-                    <p className="text-white font-medium mb-2">
-                      {latestHistoryItem.action}
-                    </p>
+                    <p className="text-white font-medium mb-2">{latestHistoryItem.action}</p>
                     <p className="text-gray-400 text-sm">
                       {new Date(latestHistoryItem.date).toLocaleDateString()}
-                      {latestHistoryItem.chamber &&
-                        ` • ${formatChamber(latestHistoryItem.chamber)}`}
+                      {latestHistoryItem.chamber && ` • ${formatChamber(latestHistoryItem.chamber)}`}
                     </p>
                   </div>
                 ) : (
@@ -880,18 +860,14 @@ export default function BillDetailPage() {
                       <FileText className="h-4 w-4 text-neon-purple" />
                       <span className="text-gray-400">Active Threads</span>
                     </div>
-                    <span className="text-white font-bold">
-                      {threads.length}
-                    </span>
+                    <span className="text-white font-bold">{threads.length}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-advoline-orange" />
                       <span className="text-gray-400">Contributors</span>
                     </div>
-                    <span className="text-white font-bold">
-                      {new Set(threads.map((t) => t.author_id)).size}
-                    </span>
+                    <span className="text-white font-bold">{new Set(threads.map((t) => t.author_id)).size}</span>
                   </div>
                 </div>
               </CardContent>
@@ -908,10 +884,7 @@ export default function BillDetailPage() {
                     Create Thread
                   </Button>
                 </Link>
-                <Button
-                  onClick={() => setShowShareModal(true)}
-                  className="w-full neon-button text-black font-bold"
-                >
+                <Button onClick={() => setShowShareModal(true)} className="w-full neon-button text-black font-bold">
                   Share on Social
                 </Button>
               </CardContent>
@@ -922,5 +895,5 @@ export default function BillDetailPage() {
         <ShareModal />
       </div>
     </div>
-  );
+  )
 }
