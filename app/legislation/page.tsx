@@ -43,6 +43,12 @@ interface SearchResult {
   title: string;
   last_action: string;
   last_action_date: string;
+  sponsor_name?: string;
+  description?: string;
+  introduced_date?: string;
+  status?: string;
+  sponsors?: Array<{ party: string }>;
+  subjects?: string[];
 }
 
 interface SearchResponse {
@@ -164,7 +170,9 @@ export default function LegislationPage() {
   };
 
   const activeFiltersCount = [statusFilter].filter((f) => f !== "all").length;
-  const displayItems = isSearchMode ? searchResults : bills;
+  const displayItems: (SearchResult | Bill)[] = isSearchMode
+    ? searchResults
+    : bills;
 
   return (
     <div className="min-h-screen bg-black pt-20">
@@ -203,7 +211,7 @@ export default function LegislationPage() {
                 <SelectTrigger className="w-40 bg-gray-900 border-gray-700 text-white">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectContent className="bg-gray-900 border-gray-700 text-gray-400">
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="introduced">Introduced</SelectItem>
                   <SelectItem value="committee">Committee</SelectItem>
@@ -246,8 +254,8 @@ export default function LegislationPage() {
             {loading
               ? "Loading..."
               : isSearchMode
-              ? `Search results: ${searchResults.length} of ${total} bills`
-              : `Showing ${bills.length} of ${total} bills`}
+                ? `Search results: ${searchResults.length} of ${total} bills`
+                : `Showing ${bills.length} of ${total} bills`}
           </div>
         </div>
 
@@ -264,7 +272,7 @@ export default function LegislationPage() {
                     {bill.sponsors?.[0]?.party && (
                       <Badge
                         className={`${getPartyColor(
-                          bill.sponsors[0].party
+                          bill.sponsors[0].party,
                         )} text-white text-xs`}
                       >
                         {bill.sponsors[0].party}
@@ -277,7 +285,7 @@ export default function LegislationPage() {
                     )}
                   </div>
                   <Badge className="bg-gray-700 text-gray-300 text-xs">
-                    {bill.status}
+                    {bill.status ?? "N/A"}
                   </Badge>
                 </div>
                 <CardTitle className="text-white text-lg font-bold leading-tight">
@@ -298,9 +306,7 @@ export default function LegislationPage() {
                   </div>
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    <span>
-                      {new Date(bill.introduced_date).toLocaleDateString()}
-                    </span>
+                    <span>{bill.introduced_date}</span>
                   </div>
                 </div>
 

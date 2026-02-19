@@ -1,325 +1,258 @@
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import {
+  Zap,
   Building2,
-  Brain,
-  GraduationCap,
-  Megaphone,
-  Crown,
-  BarChart3,
-  Handshake,
-  Target,
-  Award,
   CheckCircle,
-} from "lucide-react"
+  X,
+  Bot,
+  MessageSquare,
+  Users,
+  BarChart3,
+  Sparkles,
+  ArrowRight,
+} from "lucide-react";
 
 export default function OrganizationsPage() {
-  const solutions = [
+  const tiers = [
     {
-      id: "sentiment-data",
-      title: "Sentiment Data Analysis",
-      icon: BarChart3,
-      color: "text-neon-purple",
-      bgColor: "bg-neon-purple/10",
-      borderColor: "border-neon-purple/30",
+      id: "free",
+      label: "Free",
+      price: "$0",
+      period: "forever",
+      icon: Sparkles,
+      color: "text-gray-300",
+      accentColor: "#9ca3af",
+      borderClass: "border-gray-700",
+      glowClass: "",
+      badgeClass: "bg-gray-700 text-gray-300",
       description:
-        "AI-powered sentiment analysis on bills, legislation, topics, and politicians based on youth engagement data.",
+        "Full access to the community. Contribute data, discover bills, and start advocating.",
+      cta: "Get Started Free",
+      ctaClass:
+        "bg-white/10 hover:bg-white/20 text-white border border-white/20",
       features: [
-        "Real-time sentiment tracking on legislation",
-        "Demographic breakdowns by age, location, and interests",
-        "Anonymized data protecting user privacy",
-        "Custom reports and API access",
-        "Trending topic identification",
-        "Politician approval ratings among youth",
+        { text: "Browse legislation feed (national + state)", included: true },
+        { text: "Access all community threads", included: true },
+        { text: "5 AI bill analyses per day", included: true },
+        { text: "Contribute to sentiment data", included: true },
+        { text: "Basic engagement badges", included: true },
+        { text: "Unlimited AI analyses", included: false },
+        { text: "SMS outreach automation", included: false },
+        { text: "AI chatbot for bill inquiries", included: false },
+        { text: "Multi-team collaboration", included: false },
+        { text: "Aggregate sentiment reports", included: false },
       ],
-      targetAudience: "NGOs, Think Tanks, Universities, Advocacy Organizations",
-      cta: "Get Sentiment Data",
-      pricing: "Starting at $299/month",
     },
     {
-      id: "education",
-      title: "Education Partnerships",
-      icon: GraduationCap,
-      color: "text-green-500",
-      bgColor: "bg-green-500/10",
-      borderColor: "border-green-500/30",
-      description:
-        "Transform civic education with AI-summarized bills and creative student assignments through our thread system.",
-      features: [
-        "AI-generated bill summaries for classroom use",
-        "Student assignment creation (zines, protest art, blogs)",
-        "AI-powered class sentiment ranking and analysis",
-        "Automated fact-checking and source verification",
-        "Peer upvoting and collaborative learning",
-        "Access to real campaigns and calls to action",
-      ],
-      targetAudience: "Universities, High Schools, Civic Education Programs",
-      cta: "Partner With Us",
-      pricing: "Custom education pricing",
-    },
-    {
-      id: "brand-activism",
-      title: "Brand Activism",
-      icon: Megaphone,
+      id: "creator",
+      label: "Creator",
+      price: "$9.99",
+      period: "per month",
+      icon: Zap,
       color: "text-advoline-orange",
-      bgColor: "bg-advoline-orange/10",
-      borderColor: "border-advoline-orange/30",
+      accentColor: "#f97316",
+      borderClass: "border-advoline-orange/60",
+      glowClass: "shadow-[0_0_40px_rgba(249,115,22,0.15)]",
+      badgeClass: "bg-advoline-orange/20 text-advoline-orange",
       description:
-        "Enable NPOs to create impactful campaigns and threads with monetization options to boost reach and engagement.",
+        "For advocates and creators who want unlimited AI power and outreach tools.",
+      cta: "Start Creator Plan",
+      ctaClass:
+        "bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold",
       features: [
-        "Campaign creation and management tools",
-        "Thread boosting and promotion options",
-        "Sponsored content and partnership opportunities",
-        "Analytics and engagement tracking",
-        "Direct connection with youth advocates",
-        "Custom branding and white-label options",
+        { text: "Everything in Free", included: true },
+        { text: "Unlimited AI bill analyses", included: true },
+        { text: "SMS outreach automation", included: true },
+        { text: "AI chatbot for specific bill inquiries", included: true },
+        { text: "Advanced thread analytics", included: true },
+        { text: "Priority support", included: true },
+        { text: "Multi-team collaboration", included: false },
+        { text: "Aggregate sentiment reports", included: false },
+        { text: "API access", included: false },
+        { text: "Custom branding", included: false },
       ],
-      targetAudience: "NPOs, Advocacy Groups, Social Impact Organizations",
-      cta: "Launch Campaign",
-      pricing: "Performance-based pricing",
     },
     {
-      id: "premium-creators",
-      title: "Premium Creator Tools",
-      icon: Crown,
-      color: "text-yellow-500",
-      bgColor: "bg-yellow-500/10",
-      borderColor: "border-yellow-500/30",
+      id: "organization",
+      label: "Organization",
+      price: "$39–99",
+      period: "per month",
+      icon: Building2,
+      color: "text-neon-purple",
+      accentColor: "#a855f7",
+      borderClass: "border-neon-purple/60",
+      glowClass: "shadow-[0_0_40px_rgba(168,85,247,0.15)]",
+      badgeClass: "bg-neon-purple/20 text-neon-purple",
       description:
-        "Advanced tools and features for content creators to maximize their impact and reach within the advocacy community.",
+        "For nonprofits and educators who need policy intelligence without the analysis overhead.",
+      cta: "Contact Us",
+      ctaClass:
+        "bg-neon-purple hover:bg-neon-purple/90 text-white font-bold neon-button",
       features: [
-        "Enhanced thread promotion and discovery",
-        "Advanced analytics and audience insights",
-        "Priority support and early feature access",
-        "Monetization opportunities through partnerships",
-        "Custom creator badges and verification",
-        "Cross-platform content distribution",
+        { text: "Everything in Creator", included: true },
+        { text: "Multi-team collaboration", included: true },
+        { text: "Aggregate sentiment analysis per bill", included: true },
+        { text: "Custom sentiment reports", included: true },
+        { text: "API access", included: true },
+        { text: "Custom branding & white-label", included: true },
+        { text: "Dedicated account manager", included: true },
+        { text: "Early access to new features", included: true },
+        { text: "SLA & uptime guarantees", included: true },
+        { text: "Onboarding & training", included: true },
       ],
-      targetAudience: "Content Creators, Influencers, Youth Advocates",
-      cta: "Upgrade to Premium",
-      pricing: "$29/month",
     },
-  ]
-
-  const stats = [
-    { label: "Partner Organizations", value: "150+", icon: Building2 },
-    { label: "Student Users", value: "25K+", icon: GraduationCap },
-    { label: "Campaign Reach", value: "2.3M", icon: Target },
-    { label: "Data Points", value: "500K+", icon: Brain },
-  ]
+  ];
 
   return (
     <div className="min-h-screen bg-black pt-20">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-12">
         {/* Header */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-6xl font-black text-white mb-6">
-            PARTNER WITH <span className="text-neon-purple neon-glow font-extralight">ADVOLINE</span>
-          </h1>
-          <p className="text-xl text-gray-300 max-w-4xl mx-auto font-light leading-relaxed mb-8">
-            Empower your organization with youth-driven insights, educational tools, and advocacy platforms. Join the
-            movement to democratize political engagement for the next generation.
+        <div className="text-center mb-20">
+          <p className="text-advoline-orange text-sm font-mono tracking-widest uppercase mb-4">
+            Pricing & Plans
           </p>
-
-          {/* Stats */}
-          <div className="grid md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <stat.icon className="h-8 w-8 text-advoline-orange mx-auto mb-2" />
-                <div className="text-3xl font-black text-white">{stat.value}</div>
-                <div className="text-gray-400 text-sm">{stat.label}</div>
-              </div>
-            ))}
-          </div>
+          <h1 className="text-5xl md:text-7xl font-black text-white mb-6 leading-none tracking-tight">
+            ADVOCATE AT
+            <br />
+            <span className="text-neon-purple neon-glow font-extralight">
+              EVERY LEVEL
+            </span>
+          </h1>
+          <p className="text-lg text-gray-400 max-w-2xl mx-auto font-light leading-relaxed">
+            From aspiring creators to experienced nonprofits, Advoline meets you
+            where you are.
+          </p>
         </div>
-
-        {/* Solutions Grid */}
-        <div className="space-y-12">
-          {solutions.map((solution, index) => (
+        {/* Pricing Cards */}
+        <div className="grid md:grid-cols-3 gap-6 mb-20">
+          {tiers.map((tier) => (
             <Card
-              key={solution.id}
-              className={`bg-gray-900 ${solution.borderColor} border-2 hover:shadow-2xl transition-all duration-300`}
+              key={tier.id}
+              className={`bg-gray-900 border-2 ${tier.borderClass} ${tier.glowClass} relative flex flex-col transition-all duration-300 hover:-translate-y-1`}
             >
-              <CardHeader>
-                <div className="flex items-center gap-4 mb-4">
-                  <div className={`p-4 rounded-xl ${solution.bgColor}`}>
-                    <solution.icon className={`h-8 w-8 ${solution.color}`} />
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`p-2 rounded-lg bg-white/5`}>
+                    <tier.icon className={`h-5 w-5 ${tier.color}`} />
                   </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-white text-2xl font-black mb-2">{solution.title}</CardTitle>
-                    <CardDescription className="text-gray-400 text-lg">{solution.description}</CardDescription>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-black text-white mb-1">{solution.pricing}</div>
-                    <Badge
-                      className={`${solution.color.replace("text-", "bg-")}/20 ${solution.color} border ${solution.color.replace("text-", "border-")}/50`}
-                    >
-                      {solution.targetAudience.split(",")[0]}
-                    </Badge>
-                  </div>
+                  <Badge
+                    className={`${tier.badgeClass} border-0 font-mono text-xs`}
+                  >
+                    {tier.label}
+                  </Badge>
                 </div>
+
+                <div className="mb-3">
+                  <span className="text-4xl font-black text-white">
+                    {tier.price}
+                  </span>
+                  <span className="text-gray-500 text-sm ml-2">
+                    /{tier.period}
+                  </span>
+                </div>
+
+                <CardDescription className="text-gray-400 text-sm leading-relaxed">
+                  {tier.description}
+                </CardDescription>
               </CardHeader>
 
-              <CardContent>
-                <div className="grid lg:grid-cols-3 gap-8">
-                  {/* Features */}
-                  <div className="lg:col-span-2">
-                    <h4 className="text-white font-bold text-lg mb-4 flex items-center">
-                      <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                      Key Features
-                    </h4>
-                    <div className="grid md:grid-cols-2 gap-3">
-                      {solution.features.map((feature, featureIndex) => (
-                        <div key={featureIndex} className="flex items-start gap-2">
-                          <div className="w-2 h-2 bg-advoline-orange rounded-full mt-2 flex-shrink-0"></div>
-                          <span className="text-gray-300 text-sm">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+              <CardContent className="flex flex-col flex-1">
+                <Button className={`w-full mb-6 ${tier.ctaClass}`}>
+                  {tier.cta}
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
 
-                  {/* CTA Section */}
-                  <div className="bg-gray-800 rounded-lg p-6">
-                    <h4 className="text-white font-bold mb-3">Perfect For:</h4>
-                    <p className="text-gray-400 text-sm mb-4">{solution.targetAudience}</p>
-
-                    <div className="space-y-3">
-                      <Button
-                        className={`w-full font-bold ${
-                          solution.id === "sentiment-data"
-                            ? "neon-button text-black"
-                            : solution.id === "education"
-                              ? "bg-green-500 hover:bg-green-600 text-white"
-                              : solution.id === "brand-activism"
-                                ? "bg-advoline-orange hover:bg-advoline-orange/90 text-black"
-                                : "bg-yellow-500 hover:bg-yellow-600 text-black"
+                <div className="space-y-2.5 flex-1">
+                  {tier.features.map((feature, i) => (
+                    <div key={i} className="flex items-start gap-2.5">
+                      {feature.included ? (
+                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      ) : (
+                        <X className="h-4 w-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                      )}
+                      <span
+                        className={`text-sm ${
+                          feature.included ? "text-gray-300" : "text-gray-600"
                         }`}
                       >
-                        {solution.cta}
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        className="w-full border-gray-600 text-gray-400 hover:text-white bg-transparent"
-                      >
-                        Schedule Demo
-                      </Button>
+                        {feature.text}
+                      </span>
                     </div>
-                  </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Success Stories */}
-        <section className="mt-20">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
-              SUCCESS <span className="text-advoline-orange text-glow font-extralight">STORIES</span>
-            </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              See how organizations are leveraging Advoline to drive meaningful change
-            </p>
-          </div>
+        {/* FAQ / Context Row */}
+        <div className="grid md:grid-cols-2 gap-6 mb-20">
+          <Card className="bg-gray-900 border-gray-800">
+            <CardContent className="p-8">
+              <MessageSquare className="h-6 w-6 text-advoline-orange mb-4" />
+              <h3 className="text-white font-black text-xl mb-3">
+                Why free users matter
+              </h3>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Free users aren't a cost center — they're the dataset. Every
+                bill reaction, thread engagement, and AI interaction contributes
+                to the sentiment layer that powers Organization-tier insights.
+                The community <em>is</em> the product.
+              </p>
+            </CardContent>
+          </Card>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card className="bg-gray-900 border-gray-800">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-neon-purple/20 rounded-full flex items-center justify-center">
-                    <BarChart3 className="h-6 w-6 text-neon-purple" />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-bold">Climate Action Network</h3>
-                    <p className="text-gray-400 text-sm">Environmental NGO</p>
-                  </div>
-                </div>
-                <p className="text-gray-300 text-sm mb-4">
-                  "Advoline's sentiment data helped us identify key youth concerns about climate legislation, leading to
-                  a 40% increase in engagement on our campaigns."
-                </p>
-                <div className="flex items-center gap-2">
-                  <Award className="h-4 w-4 text-advoline-orange" />
-                  <span className="text-advoline-orange text-sm font-medium">40% engagement increase</span>
-                </div>
-              </CardContent>
-            </Card>
+          <Card className="bg-gray-900 border-gray-800">
+            <CardContent className="p-8">
+              <Building2 className="h-6 w-6 text-neon-purple mb-4" />
+              <h3 className="text-white font-black text-xl mb-3">
+                Built for nonprofits
+              </h3>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Most nonprofits spend hours parsing policy documents. Advoline's
+                Organization tier delivers pre-aggregated sentiment by bill so
+                your team skips straight to strategy.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-            <Card className="bg-gray-900 border-gray-800">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
-                    <GraduationCap className="h-6 w-6 text-green-500" />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-bold">UC Berkeley</h3>
-                    <p className="text-gray-400 text-sm">Political Science Dept</p>
-                  </div>
-                </div>
-                <p className="text-gray-300 text-sm mb-4">
-                  "Our students created amazing zines and protest art through Advoline's platform. Class engagement with
-                  political topics increased by 60%."
-                </p>
-                <div className="flex items-center gap-2">
-                  <Award className="h-4 w-4 text-green-500" />
-                  <span className="text-green-500 text-sm font-medium">60% engagement boost</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gray-900 border-gray-800">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-advoline-orange/20 rounded-full flex items-center justify-center">
-                    <Megaphone className="h-6 w-6 text-advoline-orange" />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-bold">March for Our Lives</h3>
-                    <p className="text-gray-400 text-sm">Youth Advocacy</p>
-                  </div>
-                </div>
-                <p className="text-gray-300 text-sm mb-4">
-                  "Advoline's brand activism tools helped us reach 2.3M young people with our gun safety campaign,
-                  resulting in unprecedented youth voter turnout."
-                </p>
-                <div className="flex items-center gap-2">
-                  <Award className="h-4 w-4 text-advoline-orange" />
-                  <span className="text-advoline-orange text-sm font-medium">2.3M reach achieved</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="mt-20 text-center">
-          <Card className="bg-gray-900 border-advoline-orange border-2 max-w-4xl mx-auto">
-            <CardContent className="p-12">
-              <div className="flex items-center justify-center gap-2 mb-6">
-                <Handshake className="h-8 w-8 text-advoline-orange" />
-                <h2 className="text-3xl font-black text-white">Ready to Partner?</h2>
-              </div>
-              <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-                Join leading organizations in empowering the next generation of advocates. Let's build the future of
-                democratic engagement together.
+        {/* Bottom CTA */}
+        <div className="text-center">
+          <Card className="bg-gray-900 border-advoline-orange/40 border-2 max-w-3xl mx-auto">
+            <CardContent className="p-10">
+              <h2 className="text-3xl font-black text-white mb-3">
+                Not sure which plan?
+              </h2>
+              <p className="text-gray-400 mb-8 max-w-xl mx-auto">
+                Start free. Upgrade when you need more AI power or want to run
+                outreach campaigns. No credit card required to get started.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold text-lg px-8 py-4">
-                  Schedule Partnership Call
+                <Button className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold px-8">
+                  Start for Free
                 </Button>
                 <Button
                   variant="outline"
-                  className="border-gray-600 text-gray-400 hover:text-white bg-transparent text-lg px-8 py-4"
+                  className="border-gray-600 text-gray-400 hover:text-white bg-transparent px-8"
                 >
-                  Download Partnership Guide
+                  Talk to Us
                 </Button>
               </div>
             </CardContent>
           </Card>
-        </section>
+        </div>
       </div>
     </div>
-  )
+  );
 }
