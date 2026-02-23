@@ -1,48 +1,51 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowRight, Brain, MessageCircle, Megaphone } from "lucide-react"
-import Link from "next/link"
-import { useState } from "react"
-import { useAuth } from "@/components/auth/auth-provider"
-import AuthModal from "@/components/auth/auth-modal"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowRight, Brain, MessageCircle, Megaphone } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+import { useAuth } from "@/components/auth/auth-provider";
+import AuthModal from "@/components/auth/auth-modal";
 
 export default function HomePage() {
-  const [authModalOpen, setAuthModalOpen] = useState(false)
-  const [authMode, setAuthMode] = useState<"signin" | "signup">("signup")
-  const { user } = useAuth()
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
+  const { user } = useAuth();
 
   const handleStartForFree = () => {
     if (user) {
       // User is already signed in, redirect to legislation feed
-      window.location.href = "/legislation"
+      window.location.href = "/legislation";
     } else {
-      setAuthMode("signup")
-      setAuthModalOpen(true)
+      setAuthMode("signup");
+      setAuthModalOpen(true);
     }
-  }
+  };
 
   const features = [
     {
       icon: Brain,
       title: "AI Summarization",
-      description: "Complex legislation broken down into digestible summaries with key points and implications.",
+      description:
+        "Complex legislation broken down into digestible summaries with key points and implications.",
       color: "text-neon-purple",
     },
     {
       icon: MessageCircle,
       title: "Creative Threads",
-      description: "Share zines, protest art, music, and blogs to make legislation accessible and engaging.",
+      description:
+        "Share zines, protest art, music, and blogs to make legislation accessible and engaging.",
       color: "text-advoline-orange",
     },
     {
       icon: Megaphone,
       title: "Direct Impact",
-      description: "Connect directly with representatives and track real policy changes driven by community action.",
+      description:
+        "Connect directly with representatives and track real policy changes driven by community action.",
       color: "text-green-500",
     },
-  ]
+  ];
 
   return (
     <>
@@ -70,8 +73,9 @@ export default function HomePage() {
               DEMOCRATIZING POLITICAL INFORMATION FOR THE NEXT GENERATION
             </div>
             <p className="text-lg md:text-xl text-gray-200 mb-12 max-w-3xl mx-auto font-light leading-relaxed">
-              Combat polarization. Amplify youth voices. Transform complex legislation into accessible, actionable
-              content that drives real change.
+              Combat polarization. Amplify youth voices. Transform complex
+              legislation into accessible, actionable content that drives real
+              change.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
@@ -83,7 +87,10 @@ export default function HomePage() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Link href="/threads">
-                <Button size="lg" className="neon-button text-black font-bold text-lg px-8 py-4 border-0">
+                <Button
+                  size="lg"
+                  className="neon-button text-black font-bold text-lg px-8 py-4 border-0"
+                >
                   Explore Threads
                 </Button>
               </Link>
@@ -96,11 +103,15 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-16">
               <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
-                OUR <span className="text-neon-purple neon-glow font-extralight">MISSION</span>
+                OUR{" "}
+                <span className="text-neon-purple neon-glow font-extralight">
+                  MISSION
+                </span>
               </h2>
               <p className="text-xl text-gray-300 max-w-3xl mx-auto font-light leading-relaxed">
-                Guarding freedom of political knowledge and expression through youth voices. No more misinformation,
-                echo chambers, and bias.
+                Advoline's mission is to democratize civic education and action
+                for youth activists. Through our nonpartisan platform, we aim to
+                create tangible political change.
               </p>
             </div>
 
@@ -110,10 +121,12 @@ export default function HomePage() {
                   <div className="w-16 h-16 bg-advoline-orange/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Brain className="h-8 w-8 text-advoline-orange" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3">Democratizing Information</h3>
+                  <h3 className="text-xl font-bold text-white mb-3">
+                    Democratizing Information
+                  </h3>
                   <p className="text-gray-400 leading-relaxed">
-                    Making complex political information accessible to everyone, regardless of background or education
-                    level.
+                    Making complex political information accessible to everyone,
+                    regardless of background or education level.
                   </p>
                 </CardContent>
               </Card>
@@ -123,9 +136,12 @@ export default function HomePage() {
                   <div className="w-16 h-16 bg-neon-purple/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <MessageCircle className="h-8 w-8 text-neon-purple" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3">Combating Polarization</h3>
+                  <h3 className="text-xl font-bold text-white mb-3">
+                    Combating Polarization
+                  </h3>
                   <p className="text-gray-400 leading-relaxed">
-                    Fostering understanding through creative expression and fact-based discussions that bridge divides.
+                    Fostering understanding through creative expression and
+                    fact-based discussions that bridge divides.
                   </p>
                 </CardContent>
               </Card>
@@ -135,9 +151,12 @@ export default function HomePage() {
                   <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Megaphone className="h-8 w-8 text-green-500" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3">Amplifying Youth Voices</h3>
+                  <h3 className="text-xl font-bold text-white mb-3">
+                    Amplifying Youth Voices
+                  </h3>
                   <p className="text-gray-400 leading-relaxed">
-                    Empowering the next generation to participate meaningfully in democracy and drive policy change.
+                    Empowering the next generation to participate meaningfully
+                    in democracy and drive policy change.
                   </p>
                 </CardContent>
               </Card>
@@ -150,10 +169,14 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-16">
               <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
-                POWERFUL <span className="text-advoline-orange text-glow font-extralight">FEATURES</span>
+                POWERFUL{" "}
+                <span className="text-advoline-orange text-glow font-extralight">
+                  FEATURES
+                </span>
               </h2>
               <p className="text-xl text-gray-300 max-w-3xl mx-auto font-light leading-relaxed">
-                Everything you need to understand, engage with, and influence the political process.
+                Everything you need to understand, engage with, and influence
+                the political process.
               </p>
             </div>
 
@@ -168,11 +191,15 @@ export default function HomePage() {
                       <div className="p-3 bg-gray-800 rounded-lg">
                         <feature.icon className={`h-8 w-8 ${feature.color}`} />
                       </div>
-                      <CardTitle className="text-white text-xl">{feature.title}</CardTitle>
+                      <CardTitle className="text-white text-xl">
+                        {feature.title}
+                      </CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-400 leading-relaxed">{feature.description}</p>
+                    <p className="text-gray-400 leading-relaxed">
+                      {feature.description}
+                    </p>
                   </CardContent>
                 </Card>
               ))}
@@ -193,7 +220,10 @@ export default function HomePage() {
         <section className="py-20 bg-gray-900">
           <div className="max-w-4xl mx-auto px-4 text-center">
             <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
-              READY TO MAKE YOUR <span className="text-neon-purple neon-glow font-extralight">VOICE HEARD?</span>
+              READY TO MAKE YOUR{" "}
+              <span className="text-neon-purple neon-glow font-extralight">
+                VOICE HEARD?
+              </span>
             </h2>
             <p className="text-xl text-gray-300 mb-12 font-light leading-relaxed">
               Join the movement. Voice your freedom. Drive the change.
@@ -207,11 +237,16 @@ export default function HomePage() {
                 {user ? "Explore Legislation" : "Start For Free"}
                 <ArrowRight className="ml-2 h-6 w-6" />
               </Button>
-              <Button size="lg" className="neon-button text-black font-bold text-xl px-12 py-6 border-0">
+              <Button
+                size="lg"
+                className="neon-button text-black font-bold text-xl px-12 py-6 border-0"
+              >
                 Watch Demo
               </Button>
             </div>
-            <p className="text-gray-400">Start exploring real legislation today!</p>
+            <p className="text-gray-400">
+              Start exploring real legislation today!
+            </p>
           </div>
         </section>
 
@@ -220,14 +255,20 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex flex-col md:flex-row items-center justify-between">
               <div className="flex items-center space-x-3 mb-4 md:mb-0">
-                <div className="text-2xl font-black text-advoline-orange">ADVOLINE</div>
+                <div className="text-2xl font-black text-advoline-orange">
+                  ADVOLINE
+                </div>
                 <div className="text-sm font-light neon-glow tracking-wide text-neon-purple">
                   Your Pipeline to Advocacy
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <span className="text-gray-400">Questions? We're here to help.</span>
-                <Button className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-600">Contact Us</Button>
+                <span className="text-gray-400">
+                  Questions? We're here to help.
+                </span>
+                <Button className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-600">
+                  Contact Us
+                </Button>
               </div>
             </div>
           </div>
@@ -241,5 +282,5 @@ export default function HomePage() {
         onModeChange={setAuthMode}
       />
     </>
-  )
+  );
 }
