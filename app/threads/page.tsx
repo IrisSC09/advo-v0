@@ -24,151 +24,19 @@ interface Thread {
   created_at: string
   profiles: {
     username: string
-    full_name: string
-    avatar_url: string | null
+    full_name?: string
+    avatar_url?: string | null
   }
-  bills: {
-    title: string
-  }
+  bill_title?: string
 }
-
-// Mock data for when database isn't set up yet
-const mockThreads: Thread[] = [
-  {
-    id: "1",
-    title: "Green New Deal Zine: Climate Justice Now",
-    content:
-      "Created a 12-page zine breaking down the climate bill in accessible graphics and art. This zine explains complex environmental policies through visual storytelling, making it easier for young people to understand the implications of climate legislation.",
-    type: "zine",
-    bill_id: "hr-2024-001",
-    likes_count: 234,
-    shares_count: 67,
-    comments_count: 45,
-    is_trending: true,
-    created_at: "2024-01-20T10:00:00Z",
-    profiles: {
-      username: "ClimateArtist",
-      full_name: "Maya Chen",
-      avatar_url: null,
-    },
-    bills: {
-      title: "Climate Action and Green Jobs Act",
-    },
-  },
-  {
-    id: "2",
-    title: "Green Jobs Anthem - Original Song",
-    content:
-      "Wrote and recorded a song about the hope this bill brings for working families. The track combines folk and hip-hop elements to tell the story of communities transitioning to clean energy jobs.",
-    type: "music",
-    bill_id: "hr-2024-001",
-    likes_count: 189,
-    shares_count: 45,
-    comments_count: 32,
-    is_trending: false,
-    created_at: "2024-01-19T14:30:00Z",
-    profiles: {
-      username: "ActivistBeats",
-      full_name: "Jordan Rivera",
-      avatar_url: null,
-    },
-    bills: {
-      title: "Climate Action and Green Jobs Act",
-    },
-  },
-  {
-    id: "3",
-    title: "Protest Poster Series: Climate Action",
-    content:
-      "Series of 6 protest posters ready for printing and sharing at climate rallies. Each poster focuses on a different aspect of the climate bill, from job creation to environmental justice.",
-    type: "art",
-    bill_id: "hr-2024-001",
-    likes_count: 156,
-    shares_count: 89,
-    comments_count: 28,
-    is_trending: true,
-    created_at: "2024-01-18T16:45:00Z",
-    profiles: {
-      username: "RevolutionaryDesign",
-      full_name: "Alex Thompson",
-      avatar_url: null,
-    },
-    bills: {
-      title: "Climate Action and Green Jobs Act",
-    },
-  },
-  {
-    id: "4",
-    title: "Why This Climate Bill Matters for Gen Z",
-    content:
-      "Deep dive into how this legislation will impact young people's economic future. Analyzing job prospects, environmental benefits, and long-term implications for our generation.",
-    type: "blog",
-    bill_id: "hr-2024-001",
-    likes_count: 298,
-    shares_count: 123,
-    comments_count: 67,
-    is_trending: false,
-    created_at: "2024-01-17T09:15:00Z",
-    profiles: {
-      username: "FutureVoter",
-      full_name: "Sam Johnson",
-      avatar_url: null,
-    },
-    bills: {
-      title: "Climate Action and Green Jobs Act",
-    },
-  },
-  {
-    id: "5",
-    title: "Student Debt Crisis Explained Through Comics",
-    content:
-      "A 8-panel comic strip that breaks down the student debt crisis and explains how the new relief bill could help millions of students. Visual storytelling at its finest!",
-    type: "zine",
-    bill_id: "hr-2024-078",
-    likes_count: 445,
-    shares_count: 156,
-    comments_count: 89,
-    is_trending: true,
-    created_at: "2024-01-16T11:20:00Z",
-    profiles: {
-      username: "ComicActivist",
-      full_name: "Riley Park",
-      avatar_url: null,
-    },
-    bills: {
-      title: "Student Debt Relief and Education Reform Act",
-    },
-  },
-  {
-    id: "6",
-    title: "Healthcare Transparency Rap Battle",
-    content:
-      "Created a rap battle between 'Big Pharma' and 'The People' to explain healthcare price transparency. Making policy debates accessible through hip-hop culture.",
-    type: "music",
-    bill_id: "s-2024-023",
-    likes_count: 167,
-    shares_count: 78,
-    comments_count: 34,
-    is_trending: false,
-    created_at: "2024-01-15T13:45:00Z",
-    profiles: {
-      username: "PolicyRapper",
-      full_name: "Marcus Williams",
-      avatar_url: null,
-    },
-    bills: {
-      title: "Healthcare Price Transparency Act",
-    },
-  },
-]
 
 export default function ThreadsPage() {
   const [threads, setThreads] = useState<Thread[]>([])
   const [loading, setLoading] = useState(true)
-  const [sortBy, setSortBy] = useState("trending")
+  const [sortBy, setSortBy] = useState("popular")
   const [filterType, setFilterType] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
-  const [usingMockData, setUsingMockData] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
 
   useEffect(() => {
     fetchThreads()
@@ -178,8 +46,7 @@ export default function ThreadsPage() {
     try {
       let query = supabase.from("threads").select(`
           *,
-          profiles:author_id (username, full_name, avatar_url),
-          bills:bill_id (title)
+          profiles:author_id (username, full_name, avatar_url)
         `)
 
       // Apply filters
@@ -189,28 +56,30 @@ export default function ThreadsPage() {
 
       // Apply sorting
       if (sortBy === "trending") {
-        query = query.order("is_trending", { ascending: false }).order("likes_count", { ascending: false })
+        query = query
+          .order("is_trending", { ascending: false })
+          .order("likes_count", { ascending: false })
+          .order("created_at", { ascending: false })
       } else if (sortBy === "recent") {
         query = query.order("created_at", { ascending: false })
       } else if (sortBy === "popular") {
-        query = query.order("likes_count", { ascending: false })
+        query = query.order("likes_count", { ascending: false }).order("created_at", { ascending: false })
       }
 
       const { data, error } = await query.limit(20)
 
       if (error) {
-        console.warn("Database not set up yet, using mock data:", error.message)
-        // Use mock data when database isn't ready
-        setUsingMockData(true)
-        setThreads(mockThreads)
+        console.error("Error loading threads:", error.message)
+        setErrorMessage("Unable to load threads right now.")
+        setThreads([])
       } else {
         setThreads(data || [])
-        setUsingMockData(false)
+        setErrorMessage("")
       }
     } catch (error) {
-      console.warn("Error fetching threads, using mock data:", error)
-      setUsingMockData(true)
-      setThreads(mockThreads)
+      console.error("Error fetching threads:", error)
+      setErrorMessage("Unable to load threads right now.")
+      setThreads([])
     } finally {
       setLoading(false)
     }
@@ -226,7 +95,7 @@ export default function ThreadsPage() {
       return (
         thread.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         thread.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        thread.profiles.username.toLowerCase().includes(searchQuery.toLowerCase())
+        (thread.profiles?.username || "").toLowerCase().includes(searchQuery.toLowerCase())
       )
     })
     .sort((a, b) => {
@@ -234,11 +103,17 @@ export default function ThreadsPage() {
       if (sortBy === "trending") {
         if (a.is_trending && !b.is_trending) return -1
         if (!a.is_trending && b.is_trending) return 1
-        return b.likes_count - a.likes_count
+        if (b.likes_count !== a.likes_count) {
+          return b.likes_count - a.likes_count
+        }
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       } else if (sortBy === "recent") {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       } else if (sortBy === "popular") {
-        return b.likes_count - a.likes_count
+        if (b.likes_count !== a.likes_count) {
+          return b.likes_count - a.likes_count
+        }
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       }
       return 0
     })
@@ -292,10 +167,10 @@ export default function ThreadsPage() {
           <p className="text-gray-400 text-lg font-light leading-relaxed">
             Discover creative content from the community. Zines, art, music, and blogs that make politics accessible.
           </p>
-          {usingMockData && (
-            <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <p className="text-yellow-400 text-sm">
-                <strong>Demo Mode:</strong> Showing sample threads. Run the database setup scripts to see real data.
+          {errorMessage && (
+            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <p className="text-red-400 text-sm">
+                <strong>Heads up:</strong> {errorMessage}
               </p>
             </div>
           )}
@@ -393,12 +268,12 @@ export default function ThreadsPage() {
                   {/* Author */}
                   <div className="flex items-center gap-2 mb-3">
                     <Avatar className="h-6 w-6">
-                      <AvatarImage src={thread.profiles.avatar_url || "/placeholder.svg"} />
+                      <AvatarImage src={thread.profiles?.avatar_url || "/placeholder.svg"} />
                       <AvatarFallback className="bg-advoline-orange text-black text-xs">
-                        {thread.profiles.username?.[0]?.toUpperCase()}
+                        {(thread.profiles?.username || "A")[0]?.toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-gray-400 text-sm">by {thread.profiles.username}</span>
+                    <span className="text-gray-400 text-sm">by {thread.profiles?.username || "anonymous"}</span>
                   </div>
 
                   {/* Related Bill */}
@@ -407,7 +282,7 @@ export default function ThreadsPage() {
                       href={`/bill/${thread.bill_id}`}
                       className="text-neon-purple hover:text-neon-purple-bright text-sm"
                     >
-                      Related to: {thread.bills.title}
+                      Related to: {thread.bill_title || thread.bill_id}
                     </Link>
                   </div>
 

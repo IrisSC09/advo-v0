@@ -21,6 +21,7 @@ interface Bill {
   title: string;
   description: string;
   introduced_date: string;
+  last_action_date?: string;
   status: string;
   sponsor_name: string;
   sponsors?: Array<{ party: string }>;
@@ -87,7 +88,7 @@ export default function LegislationPage() {
       });
       if (statusFilter !== "all") params.append("status", statusFilter);
 
-      const response = await fetch(`/api/bills?${params}`);
+      const response = await fetch(`/api/bills?${params}`, { cache: "no-store" });
       const data: BillsResponse = await response.json();
 
       // ✅ Only federal bills
@@ -306,7 +307,7 @@ export default function LegislationPage() {
                   </div>
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    <span>{bill.introduced_date}</span>
+                    <span>{bill.last_action_date || bill.introduced_date}</span>
                   </div>
                 </div>
 

@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
         *,
         profiles:author_id (username, full_name, avatar_url)
       `)
+      .order("likes_count", { ascending: false })
       .order("created_at", { ascending: false })
 
     if (billId) {

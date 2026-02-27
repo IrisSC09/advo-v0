@@ -9,6 +9,7 @@ interface Bill {
   state: string
   bill_number: string
   status: string
+  last_action_date?: string
   subjects?: string[]
   sponsors?: Array<{
     party: string
@@ -34,7 +35,7 @@ async function fetchFromLegiScan(page: number, limit: number, query?: string): P
       url = `https://api.legiscan.com/?key=${apiKey}&op=getMasterList&state=US&page=${page}`
     }
 
-    const response = await fetch(url)
+    const response = await fetch(url, { cache: "no-store" })
     if (!response.ok) {
       throw new Error(`LegiScan API error: ${response.status}`)
     }
@@ -58,7 +59,7 @@ async function fetchFromLegiScan(page: number, limit: number, query?: string): P
       bills.slice(0, limit).map(async (bill: any) => {
         try {
           const detailUrl = `https://api.legiscan.com/?key=${apiKey}&op=getBill&id=${bill.bill_id}`
-          const detailResponse = await fetch(detailUrl)
+          const detailResponse = await fetch(detailUrl, { cache: "no-store" })
 
           if (detailResponse.ok) {
             const detailData = await detailResponse.json()
@@ -81,6 +82,7 @@ async function fetchFromLegiScan(page: number, limit: number, query?: string): P
               title: bill.title || "Untitled Bill",
               description: bill.description || bill.summary || "No description available",
               introduced_date: bill.introduced || bill.last_action_date || "2024-01-01",
+              last_action_date: bill.last_action_date || billDetail.history?.[0]?.date || bill.status_date || "",
               sponsor_name: billDetail.sponsors?.[0]?.name || bill.sponsor_name || "Unknown Sponsor",
               state: bill.state || "US",
               bill_number: bill.bill_number || `BILL-${bill.bill_id}`,
@@ -99,6 +101,7 @@ async function fetchFromLegiScan(page: number, limit: number, query?: string): P
           title: bill.title || "Untitled Bill",
           description: bill.description || bill.summary || "No description available",
           introduced_date: bill.introduced || bill.last_action_date || "2024-01-01",
+          last_action_date: bill.last_action_date || bill.status_date || "",
           sponsor_name: bill.sponsor_name || "Unknown Sponsor",
           state: bill.state || "US",
           bill_number: bill.bill_number || `BILL-${bill.bill_id}`,
@@ -131,8 +134,12 @@ export async function GET(request: NextRequest) {
       bills = bills.filter((bill) => bill.status?.toLowerCase().includes(status.toLowerCase()))
     }
 
-    // Sort by introduction date (most recent first)
-    bills.sort((a, b) => new Date(b.introduced_date).getTime() - new Date(a.introduced_date).getTime())
+    // Sort by latest bill activity so the feed surfaces the freshest updates.
+    bills.sort((a, b) => {
+      const aTime = new Date(a.last_action_date || a.introduced_date).getTime()
+      const bTime = new Date(b.last_action_date || b.introduced_date).getTime()
+      return bTime - aTime
+    })
 
     const response: BillsResponse = {
       bills,
