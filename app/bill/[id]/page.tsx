@@ -29,6 +29,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
+import { useAuth } from "@/components/auth/auth-provider"
 
 interface BillDetail {
   bill_id: number
@@ -119,9 +120,12 @@ interface AISummary {
 
 export default function BillDetailPage() {
   const params = useParams()
+  const { user } = useAuth()
   const [bill, setBill] = useState<BillDetail | null>(null)
   const [threads, setThreads] = useState<Thread[]>([])
   const [aiSummary, setAiSummary] = useState<AISummary | null>(null)
+  const [aiError, setAiError] = useState("")
+  const [aiUsage, setAiUsage] = useState<{ used: number; limit: number; remaining: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [threadsLoading, setThreadsLoading] = useState(true)
   const [aiLoading, setAiLoading] = useState(false)
@@ -132,7 +136,7 @@ export default function BillDetailPage() {
   useEffect(() => {
     fetchBillDetail()
     fetchThreads()
-  }, [params.id])
+  }, [params.id, user])
 
   const fetchBillDetail = async () => {
     try {
@@ -140,8 +144,8 @@ export default function BillDetailPage() {
       if (response.ok) {
         const data = await response.json()
         setBill(data)
-        // Automatically generate AI summary after bill is loaded
-        if (data.description) {
+        // Automatically generate AI summary after bill is loaded for signed-in users.
+        if (data.description && user) {
           generateAISummary(data)
         }
       }
@@ -167,7 +171,13 @@ export default function BillDetailPage() {
   }
 
   const generateAISummary = async (billData: BillDetail) => {
+    if (!user) {
+      setAiError("Sign in to generate AI analysis.")
+      return
+    }
+
     setAiLoading(true)
+    setAiError("")
     try {
       const response = await fetch("/api/ai/summarize", {
         method: "POST",
@@ -177,15 +187,21 @@ export default function BillDetailPage() {
         body: JSON.stringify({
           billText: billData.description,
           billTitle: billData.title,
+          userId: user.id,
         }),
       })
 
       if (response.ok) {
         const data = await response.json()
         setAiSummary(data)
+        setAiUsage(data.usage || null)
+      } else {
+        const errorData = await response.json()
+        setAiError(errorData.error || "AI analysis unavailable")
       }
     } catch (error) {
       console.error("Error generating AI summary:", error)
+      setAiError("AI analysis unavailable")
     } finally {
       setAiLoading(false)
     }
@@ -454,6 +470,11 @@ export default function BillDetailPage() {
                       </div>
                     ) : aiSummary ? (
                       <div className="space-y-4">
+                        {aiUsage && (
+                          <div className="rounded-md bg-purple-500/10 border border-purple-500/30 px-3 py-2 text-sm text-purple-200">
+                            AI analyses today: {aiUsage.used}/{aiUsage.limit} ({aiUsage.remaining} remaining)
+                          </div>
+                        )}
                         <div>
                           <h4 className="text-white font-semibold mb-2 flex items-center">
                             <span className="text-purple-400 mr-2">📄</span>
@@ -506,8 +527,11 @@ export default function BillDetailPage() {
                       </div>
                     ) : (
                       <div className="text-center py-8">
-                        <p className="text-gray-400 mb-4">AI analysis unavailable</p>
+                        <p className="text-gray-400 mb-4">
+                          {aiError || (user ? "AI analysis unavailable" : "Sign in to generate AI analysis")}
+                        </p>
                         <Button
+                          disabled={!user}
                           onClick={() => generateAISummary(bill)}
                           className="bg-purple-600 hover:bg-purple-700 text-white"
                         >

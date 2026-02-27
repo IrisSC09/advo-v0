@@ -1,6 +1,22 @@
 import { generateText } from "ai"
 import { google } from "@ai-sdk/google"
 
+function parseModelJson<T>(text: string): T | null {
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
+    if (fenced?.[1]) {
+      try {
+        return JSON.parse(fenced[1]) as T
+      } catch {
+        return null
+      }
+    }
+    return null
+  }
+}
+
 export async function generateBillSummary(billText: string, billTitle: string) {
   try {
     const { text } = await generateText({
@@ -27,7 +43,7 @@ Format your response as JSON with the following structure:
       temperature: 0.3,
     })
 
-    return JSON.parse(text)
+    return parseModelJson(text)
   } catch (error) {
     console.error("Error generating AI summary:", error)
     return null
@@ -57,7 +73,11 @@ The percentages should add up to 100.`,
       temperature: 0.2,
     })
 
-    return JSON.parse(text)
+    const parsed = parseModelJson(text)
+    if (parsed) {
+      return parsed
+    }
+    throw new Error("Model did not return valid JSON")
   } catch (error) {
     console.error("Error generating sentiment analysis:", error)
     return {

@@ -1,19 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
-
-// Create Supabase client for server-side operations
-function createServerClient() {
-  const supabaseUrl = "https://mweaqdserejokxniakyn.supabase.co"
-  const supabaseServiceKey =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13ZWFxZHNlcmVqb2t4bmlha3luIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjA3MzM1NSwiZXhwIjoyMDcxNjQ5MzU1fQ.L2mLPEm4VSlWP8LlOli0FF67yqqhl3nIxHzEJtMRixU"
-
-  return createClient(supabaseUrl, supabaseServiceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  })
-}
+import { createServerClient } from "@/lib/supabase-server"
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -81,21 +67,26 @@ export async function POST(request: NextRequest) {
       .from("profiles")
       .select("id")
       .eq("id", author_id)
-      .single()
+      .maybeSingle()
 
-    if (profileError || !profile) {
+    if (profileError) {
+      console.error("Error checking profile:", profileError)
+      return NextResponse.json({ error: "Failed to verify user profile" }, { status: 500 })
+    }
+
+    if (!profile) {
       console.error("Profile not found, creating new profile:", profileError)
 
       // Create a basic profile if it doesn't exist
-      const { error: createProfileError } = await supabase.from("profiles").insert([
+      const { error: createProfileError } = await supabase.from("profiles").upsert(
         {
           id: author_id,
           username: `user_${author_id.slice(0, 8)}`,
           full_name: "Anonymous User",
-          created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
-      ])
+        { onConflict: "id" },
+      )
 
       if (createProfileError) {
         console.error("Error creating profile:", createProfileError)
