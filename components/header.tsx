@@ -22,7 +22,7 @@ export default function Header() {
     { href: "/threads", label: "Popular Threads" },
     { href: "/legislation", label: "Legislation Feed" },
     { href: "/organizations", label: "Organizations" },
-    { href: "/profile", label: "Profile" },
+    ...(user ? [{ href: "/profile", label: "Profile" }] : []),
   ];
 
   const handleAuthClick = (mode: "signin" | "signup") => {

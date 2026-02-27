@@ -98,11 +98,13 @@ export default function LegislationPage() {
         setBills(federalBills);
         setPage(1);
       } else {
-        setBills((prev) => [...prev, ...federalBills]);
+        setBills((prev) => {
+          const ids = new Set(prev.map((b) => b.bill_id));
+          return [...prev, ...federalBills.filter((b) => !ids.has(b.bill_id))];
+        });
       }
-
       setHasMore(data.hasMore);
-      setTotal(federalBills.length);
+      setTotal(reset ? federalBills.length : (prev) => prev + federalBills.length);
     } catch (error) {
       console.error("Error fetching bills:", error);
     } finally {
@@ -130,11 +132,13 @@ export default function LegislationPage() {
         setSearchResults(federalResults);
         setPage(1);
       } else {
-        setSearchResults((prev) => [...prev, ...federalResults]);
+        setSearchResults((prev) => {
+          const ids = new Set(prev.map((r) => r.bill_id));
+          return [...prev, ...federalResults.filter((r) => !ids.has(r.bill_id))];
+        });
       }
-
       setHasMore(pageNum < data.summary.total_pages);
-      setTotal(federalResults.length);
+      setTotal(reset ? federalResults.length : (t) => t + federalResults.length);
     } catch (error) {
       console.error("Error performing search:", error);
     } finally {

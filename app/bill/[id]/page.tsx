@@ -132,11 +132,13 @@ export default function BillDetailPage() {
   const [showAllSponsors, setShowAllSponsors] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [isFollowing, setIsFollowing] = useState(false)
+  const { user } = useAuth()
 
   useEffect(() => {
     fetchBillDetail()
     fetchThreads()
-  }, [params.id, user])
+  }, [params.id])
 
   const fetchBillDetail = async () => {
     try {
@@ -396,8 +398,18 @@ export default function BillDetailPage() {
                 <p className="text-gray-300 leading-relaxed">{bill.description}</p>
               </div>
               <div className="flex gap-2 ml-4">
-                <Button variant="outline" className="border-gray-600 text-gray-400 hover:text-white bg-transparent">
-                  <Bookmark className="h-4 w-4" />
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    if (!user) return
+                    if (isFollowing) await fetch(`/api/bill-follows?user_id=${user.id}&bill_id=${bill.bill_id}`, { method: "DELETE" })
+                    else await fetch("/api/bill-follows", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ user_id: user.id, bill_id: String(bill.bill_id) }) })
+                    setIsFollowing(!isFollowing)
+                  }}
+                  className={`border-gray-600 ${isFollowing ? "bg-advoline-orange border-advoline-orange text-black" : "text-gray-400 hover:text-white"} bg-transparent`}
+                >
+                  <Bookmark className={`h-4 w-4 ${isFollowing ? "fill-current" : ""}`} />
+                  {isFollowing ? "Following" : "Follow"}
                 </Button>
                 <Button
                   variant="outline"

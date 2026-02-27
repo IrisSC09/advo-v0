@@ -33,9 +33,7 @@ interface Thread {
     full_name: string
     avatar_url: string | null
   }
-  bills: {
-    title: string
-  }
+  bills?: { title: string } | null
 }
 
 interface Comment {
@@ -73,8 +71,7 @@ export default function ThreadDetailPage() {
         .from("threads")
         .select(`
           *,
-          profiles:author_id (username, full_name, avatar_url),
-          bills:bill_id (title)
+          profiles:author_id (username, full_name, avatar_url)
         `)
         .eq("id", params.id)
         .single()
@@ -277,7 +274,7 @@ export default function ThreadDetailPage() {
             {/* Related Bill */}
             <div className="mb-6">
               <Link href={`/bill/${thread.bill_id}`} className="text-neon-purple hover:text-neon-purple-bright text-sm">
-                Related to: {thread.bills.title}
+                Related to: {thread.bills?.title ?? `Bill #${thread.bill_id}`}
               </Link>
             </div>
 
