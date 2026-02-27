@@ -1,77 +1,60 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { fetchBillSearch, toLegiScanShape } from "@/lib/congressGov"
 
 interface SearchResult {
-  relevance: number
-  state: string
+  bill_id: string
   bill_number: string
-  bill_id: number
-  change_hash: string
-  url: string
-  text_url: string
-  research_url: string
-  last_action_date: string
-  last_action: string
+  state: string
   title: string
-}
-
-interface SearchResponse {
-  results: SearchResult[]
-  summary: {
-    count: number
-    page: number
-    total_pages: number
-  }
+  last_action: string
+  last_action_date: string
+  sponsor_name?: string
+  description?: string
+  introduced_date?: string
+  status?: string
+  sponsors?: Array<{ party: string }>
+  subjects?: string[]
 }
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams
-  const query = searchParams.get("query")
-  const state = searchParams.get("state") || "ALL"
-  const year = searchParams.get("year") || "2"
-  const page = searchParams.get("page") || "1"
+  const query = request.nextUrl.searchParams.get("query")
+  const page = Number.parseInt(request.nextUrl.searchParams.get("page") || "1")
+  const limit = 20
+  const offset = (page - 1) * limit
 
-  if (!query) {
+  if (!query?.trim()) {
     return NextResponse.json({ error: "Query parameter is required" }, { status: 400 })
   }
 
-  const apiKey = "d0db0d79caefbd288452efcea05eca71"
-
   try {
-    const url = `https://api.legiscan.com/?key=${apiKey}&op=getSearch&state=${state}&query=${encodeURIComponent(
-      query,
-    )}&year=${year}&page=${page}`
+    const data = await fetchBillSearch(query, offset, limit)
+    const rawBills = data.bills || []
+    const pagination = data.pagination || {}
+    const total = pagination.count ?? rawBills.length
 
-    const response = await fetch(url)
+    const results: SearchResult[] = rawBills.map((b: any) => {
+      const base = toLegiScanShape(b)
+      return {
+        ...base,
+        last_action: b.latestAction?.text || "",
+        last_action_date: b.latestAction?.actionDate || b.updateDate || "",
+        description: b.title,
+      }
+    })
 
-    if (!response.ok) {
-      throw new Error(`LegiScan API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-
-    if (!data.searchresult) {
-      return NextResponse.json({
-        results: [],
-        summary: {
-          count: 0,
-          page: 1,
-          total_pages: 0,
-        },
-      })
-    }
-
-    const searchResponse: SearchResponse = {
-      results: data.searchresult.results || [],
-      summary: data.searchresult.summary || {
-        count: 0,
-        page: 1,
-        total_pages: 0,
+    return NextResponse.json({
+      results,
+      summary: {
+        count: results.length,
+        page,
+        total_pages: Math.ceil(total / limit) || 1,
       },
-    }
-
-    return NextResponse.json(searchResponse)
+    })
   } catch (error) {
     console.error("Error in search API:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({
+      results: [],
+      summary: { count: 0, page: 1, total_pages: 0 },
+    })
   }
 }

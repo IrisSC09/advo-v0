@@ -32,7 +32,7 @@ import { useParams } from "next/navigation"
 import { useAuth } from "@/components/auth/auth-provider"
 
 interface BillDetail {
-  bill_id: number
+  bill_id: string | number
   title: string
   description: string
   introduced_date: string
@@ -71,14 +71,15 @@ interface BillDetail {
     absent: number
     total: number
     passed: number
+    vote_url?: string
   }>
   texts?: Array<{
     doc_id: number
     type: string
     mime: string
-    url: string
-    state_link: string
-    text_size: number
+    url?: string
+    state_link?: string
+    text_size?: number
   }>
   amendments?: Array<{
     amendment_id: number
@@ -120,7 +121,6 @@ interface AISummary {
 
 export default function BillDetailPage() {
   const params = useParams()
-  const { user } = useAuth()
   const [bill, setBill] = useState<BillDetail | null>(null)
   const [threads, setThreads] = useState<Thread[]>([])
   const [aiSummary, setAiSummary] = useState<AISummary | null>(null)
@@ -636,17 +636,18 @@ export default function BillDetailPage() {
                             <div>
                               <p className="text-white font-medium">{text.type}</p>
                               <p className="text-gray-400 text-sm">
-                                {text.mime} • {(text.text_size / 1024).toFixed(1)}KB
+                                {text.mime}
+                                {text.text_size ? ` • ${(text.text_size / 1024).toFixed(1)}KB` : ""}
                               </p>
                             </div>
                             <div className="flex gap-2">
-                              {text.state_link && (
+                              {(text.state_link || text.url) && (
                                 <Button
                                   size="sm"
                                   className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold"
                                   asChild
                                 >
-                                  <a href={text.state_link} target="_blank" rel="noopener noreferrer">
+                                  <a href={text.state_link || text.url} target="_blank" rel="noopener noreferrer">
                                     View Official Text
                                     <ExternalLink className="h-3 w-3 ml-1" />
                                   </a>
@@ -682,9 +683,18 @@ export default function BillDetailPage() {
                                 <p className="text-white font-medium">{vote.desc}</p>
                                 <p className="text-gray-400 text-sm">{new Date(vote.date).toLocaleDateString()}</p>
                               </div>
-                              <Badge className={vote.passed ? "bg-green-500" : "bg-red-500"}>
-                                {vote.passed ? "PASSED" : "FAILED"}
-                              </Badge>
+                              <div className="flex items-center gap-2">
+                                <Badge className={vote.passed ? "bg-green-500" : "bg-red-500"}>
+                                  {vote.passed ? "PASSED" : "FAILED"}
+                                </Badge>
+                                {vote.vote_url && (
+                                  <Button size="sm" variant="outline" className="border-gray-600" asChild>
+                                    <a href={vote.vote_url} target="_blank" rel="noopener noreferrer">
+                                      <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                             <div className="grid grid-cols-4 gap-4 text-center">
                               <div>

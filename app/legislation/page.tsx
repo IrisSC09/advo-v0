@@ -16,7 +16,7 @@ import { Search, Filter, X, Calendar, User, Building } from "lucide-react";
 import Link from "next/link";
 
 interface Bill {
-  bill_id: number;
+  bill_id: string | number;
   bill_number: string;
   title: string;
   description: string;
@@ -38,7 +38,7 @@ interface BillsResponse {
 }
 
 interface SearchResult {
-  bill_id: number;
+  bill_id: string | number;
   bill_number: string;
   state: string;
   title: string;
@@ -91,7 +91,6 @@ export default function LegislationPage() {
       const response = await fetch(`/api/bills?${params}`, { cache: "no-store" });
       const data: BillsResponse = await response.json();
 
-      // ✅ Only federal bills
       const federalBills = data.bills.filter((bill) => bill.state === "US");
 
       if (reset) {
