@@ -467,7 +467,7 @@ export default function BillDetailPage() {
 
               <TabsContent value="overview" className="space-y-6">
                 {/* AI Summary Card */}
-                <Card className="bg-gradient-to-br from-purple-900/20 to-pink-900/20 border-purple-500/30">
+                <Card className="bg-gradient-to-br bg-gray-900 border-purple-500/30">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center">
                       <Sparkles className="h-5 w-5 text-purple-400 mr-2" />

@@ -19,8 +19,10 @@ function parseVoteCounts(text: string): { yea: number; nay: number; passed?: boo
   return { yea, nay, passed }
 }
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  const parsed = parseBillId(params.id)
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const parsed = parseBillId(id)
+
   if (!parsed) {
     return NextResponse.json({ error: "Bill not found" }, { status: 404 })
   }
@@ -119,7 +121,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }))
 
     return NextResponse.json({
-      bill_id: params.id,
+      bill_id: id,
       title: bill.title || "Untitled Bill",
       description,
       introduced_date: bill.introducedDate || bill.latestAction?.actionDate || "",
