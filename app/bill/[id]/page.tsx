@@ -189,6 +189,7 @@ export default function BillDetailPage() {
         body: JSON.stringify({
           billText: billData.description,
           billTitle: billData.title,
+          billId: billData.bill_id,
           userId: user.id,
         }),
       })

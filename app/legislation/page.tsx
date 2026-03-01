@@ -61,6 +61,7 @@ export default function LegislationPage() {
   const [bills, setBills] = useState<Bill[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("recent");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -77,6 +78,10 @@ export default function LegislationPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, sortBy, statusFilter]);
+
+  const handleSearch = () => {
+    setSearchQuery(searchInput.trim());
+  };
 
   const fetchBills = async (pageNum: number, reset = false) => {
     setLoading(true);
@@ -152,6 +157,7 @@ export default function LegislationPage() {
   };
 
   const clearFilters = () => {
+    setSearchInput("");
     setSearchQuery("");
     setStatusFilter("all");
     setSortBy("recent");
@@ -202,10 +208,19 @@ export default function LegislationPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               placeholder="Search bills by title, sponsor, or topic..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               className="pl-10 bg-gray-900 border-gray-700 text-white placeholder-gray-400"
             />
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSearch}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold"
+            >
+              Search
+            </Button>
           </div>
 
           {/* Status Filter */}

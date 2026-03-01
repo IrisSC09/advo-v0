@@ -73,6 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             username: userData.user.email?.split("@")[0] || "user",
             full_name: userData.user.user_metadata?.full_name || userData.user.email?.split("@")[0] || "User",
             avatar_url: userData.user.user_metadata?.avatar_url || null,
+            state: userData.user.user_metadata?.state || null,
             created_at: new Date().toISOString(),
           }
 

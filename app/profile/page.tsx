@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Flame, FileText, MessageCircle, Share2, Zap } from "lucide-react"
 import { useAuth } from "@/components/auth/auth-provider"
@@ -15,6 +16,8 @@ export default function ProfilePage() {
   const router = useRouter()
   const [stats, setStats] = useState({ threads: 0, billsFollowed: 0, streak: 0 })
   const [recentActivity, setRecentActivity] = useState<Array<{ action: string; title: string; bill_id: string; time: string; type: string }>>([])
+  const [stateValue, setStateValue] = useState("")
+  const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     if (!user) {
@@ -41,6 +44,16 @@ export default function ProfilePage() {
     })()
   }, [user, router])
 
+  useEffect(() => {
+    setStateValue(profile?.state || "")
+  }, [profile?.state])
+
+  const saveState = async () => {
+    if (!user) return
+    const { error } = await supabase.from("profiles").update({ state: stateValue }).eq("id", user.id)
+    if (!error) setSaved(true)
+  }
+
   if (!user) return null
 
   return (
@@ -56,6 +69,13 @@ export default function ProfilePage() {
               <div className="text-center md:text-left flex-1">
                 <h1 className="text-3xl font-black text-white mb-2">{profile?.full_name || user?.email?.split("@")[0] || "User"}</h1>
                 <p className="text-gray-400 mb-4 font-light">{profile?.bio || "No location set"}</p>
+                <p className="text-gray-400 mb-2 font-light">Location: {stateValue || "No location set"}</p>
+                <div className="flex gap-2 max-w-sm">
+                  <Input list="us-states" value={stateValue} onChange={(e) => { setStateValue(e.target.value); setSaved(false) }} placeholder="State" className="bg-gray-800 border-gray-700 text-white" />
+                  <Button onClick={saveState} className="bg-advoline-orange hover:bg-advoline-orange/90 text-black">Save</Button>
+                </div>
+                <datalist id="us-states">{["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"].map((s) => <option key={s} value={s} />)}</datalist>
+                {saved && <p className="text-green-400 text-sm mt-2">Location saved.</p>}
               </div>
             </div>
           </CardContent>
