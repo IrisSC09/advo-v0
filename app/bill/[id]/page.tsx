@@ -3,6 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  BarChart2,
+  ThumbsUp,
+  ThumbsDown,
+  Minus,
+  MessageSquare,
+  AlertCircle,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -679,22 +687,111 @@ export default function BillDetailPage() {
 
                 {/* Sentiment */}
                 {sentiment && (
-                  <Card className="bg-gray-900 border-gray-800">
-                    <CardHeader>
-                      <CardTitle className="text-white">
-                        Thread Sentiment
+                  <Card className="bg-gray-950 border border-gray-800 rounded-2xl overflow-hidden">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-white flex items-center gap-2 text-base font-semibold">
+                        <BarChart2 className="w-4 h-4 text-blue-400" />
+                        Community Sentiment Analysis
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="text-sm text-gray-300">
-                      <p className="mb-2">{sentiment.summary}</p>
-                      <p>
-                        Support {sentiment.support}% • Oppose {sentiment.oppose}
-                        % • Neutral {sentiment.neutral}%
-                      </p>
-                      {!!sentiment.keyThemes?.length && (
-                        <p className="mt-2 text-gray-400">
-                          Themes: {sentiment.keyThemes.join(", ")}
+                    <CardContent className="space-y-4">
+                      {/* Stat Cards */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-green-950/60 border border-green-900/50 rounded-xl p-3 flex flex-col items-center gap-1">
+                          <ThumbsUp className="w-5 h-5 text-green-400" />
+                          <span className="text-white text-xl font-bold">
+                            {sentiment.support}%
+                          </span>
+                          <span className="text-green-400 text-xs">
+                            Supporters
+                          </span>
+                        </div>
+                        <div className="bg-red-950/60 border border-red-900/50 rounded-xl p-3 flex flex-col items-center gap-1">
+                          <ThumbsDown className="w-5 h-5 text-red-400" />
+                          <span className="text-white text-xl font-bold">
+                            {sentiment.oppose}%
+                          </span>
+                          <span className="text-red-400 text-xs">
+                            Dissenters
+                          </span>
+                        </div>
+                        <div className="bg-gray-800/60 border border-gray-700/50 rounded-xl p-3 flex flex-col items-center gap-1">
+                          <Minus className="w-5 h-5 text-gray-400" />
+                          <span className="text-white text-xl font-bold">
+                            {sentiment.neutral}%
+                          </span>
+                          <span className="text-gray-400 text-xs">Neutral</span>
+                        </div>
+                      </div>
+
+                      {/* Sentiment Bar */}
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-gray-400 text-xs">
+                            Overall Sentiment
+                          </span>
+                          <span
+                            className={`text-xs font-semibold ${
+                              sentiment.support > sentiment.oppose
+                                ? "text-green-400"
+                                : sentiment.oppose > sentiment.support
+                                  ? "text-red-400"
+                                  : "text-yellow-400"
+                            }`}
+                          >
+                            {sentiment.support > sentiment.oppose
+                              ? "Positive"
+                              : sentiment.oppose > sentiment.support
+                                ? "Negative"
+                                : "Mixed"}
+                          </span>
+                        </div>
+                        <div className="flex h-2 rounded-full overflow-hidden gap-0.5">
+                          <div
+                            className="bg-green-500 rounded-l-full transition-all"
+                            style={{ width: `${sentiment.support}%` }}
+                          />
+                          <div
+                            className="bg-red-500 transition-all"
+                            style={{ width: `${sentiment.oppose}%` }}
+                          />
+                          <div
+                            className="bg-gray-600 rounded-r-full transition-all"
+                            style={{ width: `${sentiment.neutral}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-gray-500 text-xs mt-1">
+                          <span>Support</span>
+                          <span>Oppose</span>
+                          <span>Neutral</span>
+                        </div>
+                      </div>
+
+                      {/* Summary */}
+                      <div className="border-t border-gray-800 pt-3 space-y-2">
+                        <div className="flex items-center gap-1.5 text-blue-400 text-xs font-semibold">
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          Analysis Summary
+                        </div>
+                        <p className="text-gray-300 text-xs leading-relaxed">
+                          {sentiment.summary}
                         </p>
+                      </div>
+
+                      {/* Key Themes */}
+                      {!!sentiment.keyThemes?.length && (
+                        <div className="border-t border-gray-800 pt-3 space-y-2">
+                          <div className="flex items-center gap-1.5 text-orange-400 text-xs font-semibold">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            Common Themes
+                          </div>
+                          {sentiment.keyThemes.map((theme, i) => (
+                            <span key={i} className="text-gray-300 text-xs">
+                              {theme}
+                              {i < sentiment.keyThemes.length - 1 ? ", " : ""}
+                            </span>
+                          ))}
+                        </div>
                       )}
                     </CardContent>
                   </Card>
