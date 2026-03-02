@@ -1,25 +1,27 @@
 import { NextResponse } from "next/server"
 import { generateBillSummary } from "@/lib/ai"
-import { createServerClient } from "@/lib/supabase-server"
 
 const DAILY_LIMIT = 5
+const usageByUserDay = new Map<string, number>()
 
 function buildFallbackSummary(billText: string, billTitle: string) {
   const cleaned = billText.replace(/\s+/g, " ").trim()
-  const sentences = cleaned
+  const preview = cleaned.slice(0, 600)
+  const sentences = preview
     .split(/[.!?]+/)
     .map((s) => s.trim())
     .filter(Boolean)
-  const summarySentences = sentences.slice(0, 3)
-  const keyPointSentences = sentences.slice(0, 5)
+    .slice(0, 3)
 
   return {
-    summary: summarySentences.length
-      ? summarySentences.join(". ") + "."
+    summary: sentences.length
+      ? sentences.join(". ") + "."
       : `${billTitle} is currently available, but AI generation is temporarily unavailable.`,
-    keyPoints: keyPointSentences.length
-      ? keyPointSentences.map((s) => (s.endsWith(".") ? s : `${s}.`))
-      : ["Could not extract concrete key points from the available bill text."],
+    keyPoints: [
+      "Review the bill text and status timeline for exact language.",
+      "Check sponsors, committee activity, and recent actions for context.",
+      "Use community threads to compare different interpretations.",
+    ],
     impact: "Potential impact depends on implementation details and who is covered by the bill.",
     controversialAspects: "No automated analysis available right now; review source text for debated clauses.",
   }
@@ -27,47 +29,16 @@ function buildFallbackSummary(billText: string, billTitle: string) {
 
 export async function POST(request: Request) {
   try {
-    const { billText, billTitle, billId, userId } = await request.json()
+    const { billText, billTitle, userId } = await request.json()
 
-    if (!billText || !billTitle || !billId || !userId) {
+    if (!billText || !billTitle || !userId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    const supabase = createServerClient()
-    const today = new Date().toISOString().slice(0, 10) // UTC day
+    const today = new Date().toISOString().slice(0, 10)
+    const usageKey = `${userId}:${today}`
+    const used = usageByUserDay.get(usageKey) || 0
 
-    const { data: existing } = await supabase
-      .from("ai_daily_summaries")
-      .select("analysis")
-      .eq("user_id", userId)
-      .eq("bill_id", billId.toString())
-      .eq("analysis_date", today)
-      .maybeSingle()
-
-    if (existing?.analysis) {
-      const { count } = await supabase
-        .from("ai_daily_summaries")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("analysis_date", today)
-
-      return NextResponse.json({
-        ...(existing.analysis as object),
-        usage: {
-          limit: DAILY_LIMIT,
-          used: count || 0,
-          remaining: Math.max(DAILY_LIMIT - (count || 0), 0),
-        },
-      })
-    }
-
-    const { count } = await supabase
-      .from("ai_daily_summaries")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("analysis_date", today)
-
-    const used = count || 0
     if (used >= DAILY_LIMIT) {
       return NextResponse.json(
         {
@@ -81,15 +52,7 @@ export async function POST(request: Request) {
     }
 
     const summary = (await generateBillSummary(billText, billTitle)) || buildFallbackSummary(billText, billTitle)
-
-    await supabase.from("ai_daily_summaries").insert({
-      user_id: userId,
-      bill_id: billId.toString(),
-      analysis_date: today,
-      analysis: summary,
-      created_at: new Date().toISOString(),
-    })
-
+    usageByUserDay.set(usageKey, used + 1)
     return NextResponse.json({
       ...summary,
       usage: {

@@ -5,6 +5,12 @@ function parseModelJson<T>(text: string): T | null {
   try {
     return JSON.parse(text) as T
   } catch {
+    const objectMatch = text.match(/\{[\s\S]*\}/)
+    if (objectMatch?.[0]) {
+      try {
+        return JSON.parse(objectMatch[0]) as T
+      } catch {}
+    }
     const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
     if (fenced?.[1]) {
       try {

@@ -237,12 +237,6 @@ export default function HomePage() {
                 {user ? "Explore Legislation" : "Start For Free"}
                 <ArrowRight className="ml-2 h-6 w-6" />
               </Button>
-              <Button
-                size="lg"
-                className="neon-button text-black font-bold text-xl px-12 py-6 border-0"
-              >
-                Watch Demo
-              </Button>
             </div>
             <p className="text-gray-400">
               Start exploring real legislation today!

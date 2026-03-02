@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, TrendingUp, Heart, Share2, MessageCircle, FileText, Music, Palette, Filter } from "lucide-react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
+import TakeActionModal from "@/components/take-action-modal"
 
 interface Thread {
   id: string
@@ -307,11 +308,14 @@ export default function ThreadsPage() {
                         <span>{thread.comments_count}</span>
                       </div>
                     </div>
-                    <Link href={`/threads/${thread.id}`}>
-                      <Button size="sm" className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold">
-                        View Thread
-                      </Button>
-                    </Link>
+                    <div className="flex gap-2">
+                      <TakeActionModal />
+                      <Link href={`/threads/${thread.id}`}>
+                        <Button size="sm" className="bg-advoline-orange hover:bg-advoline-orange/90 text-black font-bold">
+                          View Thread
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

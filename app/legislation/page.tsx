@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Search, Filter, X, Calendar, User, Building } from "lucide-react";
 import Link from "next/link";
+import TakeActionModal from "@/components/take-action-modal";
 
 interface Bill {
   bill_id: string | number;
@@ -344,7 +345,8 @@ export default function LegislationPage() {
                   ...
                 </p>
 
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
+                  <TakeActionModal />
                   <Link href={`/bill/${bill.bill_id}`}>
                     <Button
                       size="sm"

@@ -61,65 +61,19 @@ async function fetchFromLegiScan(page: number, limit: number, query?: string): P
       return bTime - aTime
     })
 
-    // For each bill, fetch detailed information to get subjects and sponsors
-    const detailedBills = await Promise.all(
-      bills.slice(0, limit).map(async (bill: any) => {
-        try {
-          const detailUrl = `https://api.legiscan.com/?key=${apiKey}&op=getBill&id=${bill.bill_id}`
-          const detailResponse = await fetch(detailUrl, { cache: "no-store" })
-
-          if (detailResponse.ok) {
-            const detailData = await detailResponse.json()
-            const billDetail = detailData.bill
-
-            // Process subjects
-            const subjects = billDetail.subjects
-              ? Object.values(billDetail.subjects).map((subject: any) => subject.subject_name || subject)
-              : []
-
-            // Process sponsors
-            const sponsors = billDetail.sponsors
-              ? Object.values(billDetail.sponsors).map((sponsor: any) => ({
-                  party: sponsor.party || "Unknown",
-                }))
-              : []
-
-            return {
-              bill_id: bill.bill_id,
-              title: bill.title || "Untitled Bill",
-              description: bill.description || bill.summary || "No description available",
-              introduced_date: bill.introduced || bill.last_action_date || "2024-01-01",
-              last_action_date: bill.last_action_date || billDetail.history?.[0]?.date || bill.status_date || "",
-              sponsor_name: billDetail.sponsors?.[0]?.name || bill.sponsor_name || "Unknown Sponsor",
-              state: bill.state || "US",
-              bill_number: bill.bill_number || `BILL-${bill.bill_id}`,
-              status: bill.status_desc || bill.status || "Unknown",
-              subjects,
-              sponsors,
-            }
-          }
-        } catch (error) {
-          console.error(`Error fetching details for bill ${bill.bill_id}:`, error)
-        }
-
-        // Fallback to basic bill data
-        return {
-          bill_id: bill.bill_id,
-          title: bill.title || "Untitled Bill",
-          description: bill.description || bill.summary || "No description available",
-          introduced_date: bill.introduced || bill.last_action_date || "2024-01-01",
-          last_action_date: bill.last_action_date || bill.status_date || "",
-          sponsor_name: bill.sponsor_name || "Unknown Sponsor",
-          state: bill.state || "US",
-          bill_number: bill.bill_number || `BILL-${bill.bill_id}`,
-          status: bill.status_desc || bill.status || "Unknown",
-          subjects: [],
-          sponsors: [],
-        }
-      }),
-    )
-
-    return detailedBills.filter(Boolean)
+    return bills.slice(0, limit).map((bill: any) => ({
+      bill_id: bill.bill_id,
+      title: bill.title || "Untitled Bill",
+      description: bill.description || bill.summary || "No description available",
+      introduced_date: bill.introduced || bill.last_action_date || "2024-01-01",
+      last_action_date: bill.last_action_date || bill.status_date || "",
+      sponsor_name: bill.sponsor_name || "Unknown Sponsor",
+      state: bill.state || "US",
+      bill_number: bill.bill_number || bill.number || `BILL-${bill.bill_id}`,
+      status: bill.status_desc || bill.status || "Unknown",
+      subjects: [],
+      sponsors: [],
+    }))
   } catch (error) {
     console.error("Error fetching from LegiScan:", error)
     return []

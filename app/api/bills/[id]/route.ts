@@ -82,6 +82,13 @@ async function fetchBillFromLegiScan(billId: string): Promise<BillDetail | null>
       return null
     }
 
+    const sponsors = Array.isArray(bill.sponsors) ? bill.sponsors : Object.values(bill.sponsors || {})
+    const history = Array.isArray(bill.history) ? bill.history : Object.values(bill.history || {})
+    const rawVotes = Array.isArray(bill.votes) ? bill.votes : Object.values(bill.votes || {})
+    const texts = Array.isArray(bill.texts) ? bill.texts : Object.values(bill.texts || {})
+    const amendments = Array.isArray(bill.amendments) ? bill.amendments : Object.values(bill.amendments || {})
+    const supplements = Array.isArray(bill.supplements) ? bill.supplements : Object.values(bill.supplements || {})
+
     // Process subjects - extract subject names from objects
     const subjects = bill.subjects
       ? Object.values(bill.subjects).map((subject: any) => subject.subject_name || subject)
@@ -95,26 +102,62 @@ async function fetchBillFromLegiScan(billId: string): Promise<BillDetail | null>
         }))
       : []
 
+    const votes = await Promise.all(
+      (rawVotes as any[]).map(async (v: any) => {
+        const base = {
+          roll_call_id: v.roll_call_id || v.id || 0,
+          date: v.date || v.vote_date || bill.status_date || bill.introduced || "",
+          desc: v.desc || v.motion || v.description || "Roll call vote",
+          yea: Number(v.yea ?? v.total_yea ?? 0),
+          nay: Number(v.nay ?? v.total_nay ?? 0),
+          nv: Number(v.nv ?? v.total_nv ?? 0),
+          absent: Number(v.absent ?? v.total_absent ?? 0),
+          total: Number(v.total ?? v.total_vote ?? ((v.total_yea || 0) + (v.total_nay || 0) + (v.total_nv || 0) + (v.total_absent || 0))),
+          passed: Number(v.passed ?? v.pass ?? 0),
+          vote_url: v.url || "",
+        }
+        if (base.yea || base.nay || base.nv || base.absent) return base
+        if (base.roll_call_id) {
+          const rc = await fetchRollCall(String(base.roll_call_id))
+          if (rc) {
+            return {
+              ...base,
+              date: rc.date || base.date,
+              desc: rc.desc || base.desc,
+              yea: Number(rc.yea ?? rc.total_yea ?? 0),
+              nay: Number(rc.nay ?? rc.total_nay ?? 0),
+              nv: Number(rc.nv ?? rc.total_nv ?? 0),
+              absent: Number(rc.absent ?? rc.total_absent ?? 0),
+              total: Number(rc.total ?? rc.total_vote ?? 0),
+              passed: Number(rc.passed ?? rc.pass ?? 0),
+              vote_url: rc.url || base.vote_url,
+            }
+          }
+        }
+        return base
+      }),
+    )
+
     return {
       bill_id: bill.bill_id,
       title: bill.title || "Untitled Bill",
       description: bill.description || bill.summary || "No description available",
       introduced_date: bill.introduced || "2024-01-01",
-      sponsor_name: bill.sponsors?.[0]?.name || "Unknown Sponsor",
+      sponsor_name: (sponsors as any[])?.[0]?.name || "Unknown Sponsor",
       state: bill.state || "US",
       bill_number: bill.bill_number || `BILL-${bill.bill_id}`,
       status: bill.status_desc || bill.status || "Unknown Status",
       status_date: bill.status_date || "",
       progress,
       committee: bill.committee?.name || "",
-      next_action: bill.history?.[0]?.action || "",
-      sponsors: bill.sponsors || [],
+      next_action: (history as any[])?.[0]?.action || "",
+      sponsors: sponsors || [],
       subjects,
-      history: bill.history || [],
-      votes: bill.votes || [],
-      texts: bill.texts || [],
-      amendments: bill.amendments || [],
-      supplements: bill.supplements || [],
+      history: history || [],
+      votes: (votes || []).filter((v: any) => v.roll_call_id || v.desc),
+      texts: texts || [],
+      amendments: amendments || [],
+      supplements: supplements || [],
     }
   } catch (error) {
     console.error("Error fetching bill from LegiScan:", error)
@@ -205,7 +248,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // Default: get bill details
     const {id}=await params
-    const bill = fetchBillFromLegiScan(id)
+    const bill = await fetchBillFromLegiScan(id)
 
     if (!bill) {
       return NextResponse.json({ error: "Bill not found" }, { status: 404 })
