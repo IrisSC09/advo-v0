@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextResponse } from "next/server" //NEED FIXING - need to use gemini api to get sentiment
 
 export async function POST(request: Request) {
   try {

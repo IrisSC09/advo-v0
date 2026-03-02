@@ -13,39 +13,7 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/components/auth/auth-provider"
-
-interface Thread {
-  id: string
-  title: string
-  content: string
-  type: string
-  bill_id: string
-  author_id: string
-  file_url: string | null
-  preview_url: string | null
-  tags: string[]
-  likes_count: number
-  shares_count: number
-  comments_count: number
-  created_at: string
-  profiles: {
-    username: string
-    full_name: string
-    avatar_url: string | null
-  }
-  bills?: { title: string } | null
-}
-
-interface Comment {
-  id: string
-  content: string
-  created_at: string
-  profiles: {
-    username: string
-    full_name: string
-    avatar_url: string | null
-  }
-}
+import {Thread, Comment} from "@/app/interfaces"
 
 export default function ThreadDetailPage() {
   const params = useParams()
@@ -274,7 +242,7 @@ export default function ThreadDetailPage() {
             {/* Related Bill */}
             <div className="mb-6">
               <Link href={`/bill/${thread.bill_id}`} className="text-neon-purple hover:text-neon-purple-bright text-sm">
-                Related to: {thread.bills?.title ?? `Bill #${thread.bill_id}`}
+                Related to: {thread.bill_title ?? `Bill #${thread.bill_id}`}
               </Link>
             </div>
 

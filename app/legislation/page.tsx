@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,51 +15,11 @@ import {
 import { Search, Filter, X, Calendar, User, Building } from "lucide-react";
 import Link from "next/link";
 import TakeActionModal from "@/components/take-action-modal";
-
-interface Bill {
-  bill_id: string | number;
-  bill_number: string;
-  title: string;
-  description: string;
-  introduced_date: string;
-  last_action_date?: string;
-  status: string;
-  sponsor_name: string;
-  sponsors?: Array<{ party: string }>;
-  subjects?: string[];
-  state: string;
-}
-
-interface BillsResponse {
-  bills: Bill[];
-  total: number;
-  page: number;
-  limit: number;
-  hasMore: boolean;
-}
-
-interface SearchResult {
-  bill_id: string | number;
-  bill_number: string;
-  state: string;
-  title: string;
-  last_action: string;
-  last_action_date: string;
-  sponsor_name?: string;
-  description?: string;
-  introduced_date?: string;
-  status?: string;
-  sponsors?: Array<{ party: string }>;
-  subjects?: string[];
-}
-
-interface SearchResponse {
-  results: SearchResult[];
-  summary: { count: number; page: number; total_pages: number };
-}
+import { BillsResponse, SearchResult, SearchResponse, BillDetail } from "@/app/interfaces";
+import { getSubjectColor } from "../misc-functions";
 
 export default function LegislationPage() {
-  const [bills, setBills] = useState<Bill[]>([]);
+  const [bills, setBills] = useState<BillDetail[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
@@ -181,9 +141,29 @@ export default function LegislationPage() {
   };
 
   const activeFiltersCount = [statusFilter].filter((f) => f !== "all").length;
-  const displayItems: (SearchResult | Bill)[] = isSearchMode
-    ? searchResults
-    : bills;
+  const displayItems = useMemo<BillDetail[]>(() => {
+    if (!isSearchMode) return bills;
+  
+    return searchResults.map((result) => ({
+      bill_id: result.bill_id,
+      title: result.title,
+      description: "",
+      introduced_date: result.last_action_date,
+      sponsor_name: "",
+      state: result.state,
+      bill_number: result.bill_number,
+      status: "",
+      last_action_date: result.last_action_date,
+      sponsors: [],
+      subjects: [],
+      progress: [],
+      history: [],
+      votes: [],
+      texts: [],
+      amendments: [],
+      supplements: [],
+    }));
+  }, [isSearchMode, bills, searchResults]);
 
   return (
     <div className="min-h-screen bg-black pt-20">
@@ -283,40 +263,32 @@ export default function LegislationPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {displayItems.map((bill) => (
             <Card
-              key={bill.bill_id}
-              className="bg-gray-900 border-gray-800 hover:border-advoline-orange transition-colors"
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
+                key={bill.bill_id}
+                className="bg-gray-900 border-gray-800 hover:border-advoline-orange transition-colors"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2 justify-between mb-2">
+                    {/* Show sponsor party if available */}
                     {bill.sponsors?.[0]?.party && (
-                      <Badge
-                        className={`${getPartyColor(
-                          bill.sponsors[0].party,
-                        )} text-white text-xs`}
-                      >
+                      <Badge className={`${getPartyColor(bill.sponsors[0].party)} text-white text-xs`}>
                         {bill.sponsors[0].party}
                       </Badge>
                     )}
+                    {/* Show first subject as primary topic */}
                     {bill.subjects?.[0] && (
-                      <Badge className="bg-neon-purple text-white text-xs">
-                        {bill.subjects[0]}
-                      </Badge>
+                      <Badge className="bg-neon-purple text-white text-xs">{bill.subjects[0]}</Badge>
                     )}
                   </div>
-                  <Badge className="bg-gray-700 text-gray-300 text-xs">
-                    {bill.status ?? "N/A"}
-                  </Badge>
-                </div>
-                <CardTitle className="text-white text-lg font-bold leading-tight">
-                  <Link
-                    href={`/bill/${bill.bill_id}`}
-                    className="hover:text-advoline-orange transition-colors"
-                  >
-                    {bill.title}
-                  </Link>
-                </CardTitle>
-              </CardHeader>
+          
+              <CardTitle className="text-white text-lg font-bold leading-tight">
+                <Link
+                  href={`/bill/${bill.bill_id}`}
+                  className="hover:text-advoline-orange transition-colors"
+                >
+                  {bill.title}
+                </Link>
+              </CardTitle>
+            </CardHeader>
 
               <CardContent>
                 <div className="flex items-center gap-4 mb-3 text-gray-400 text-sm">

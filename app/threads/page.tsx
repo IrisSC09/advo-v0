@@ -11,25 +11,7 @@ import { Search, TrendingUp, Heart, Share2, MessageCircle, FileText, Music, Pale
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import TakeActionModal from "@/components/take-action-modal"
-
-interface Thread {
-  id: string
-  title: string
-  content: string
-  type: string
-  bill_id: string
-  likes_count: number
-  shares_count: number
-  comments_count: number
-  is_trending: boolean
-  created_at: string
-  profiles: {
-    username: string
-    full_name?: string
-    avatar_url?: string | null
-  }
-  bill_title?: string
-}
+import {Thread} from "@/app/interfaces"
 
 export default function ThreadsPage() {
   const [threads, setThreads] = useState<Thread[]>([])
