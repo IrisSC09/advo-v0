@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bill, fetchBills, searchBills } from "@/lib/congressData";
+import { fetchBills, searchBills } from "@/lib/congressData";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BillDetail } from "@/app/interfaces";
 
 export default function BillsFeed() {
-  const [bills, setBills] = useState<Bill[]>([]);
+  const [bills, setBills] = useState<BillDetail[]>([]);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<{ status?: string }>({});
@@ -20,7 +21,7 @@ export default function BillsFeed() {
 
   async function loadBills(pageNum: number, reset = false) {
     setLoading(true);
-    let data: Bill[];
+    let data: BillDetail[];
     if (query) {
       data = await searchBills(query, pageNum, reset ? 100 : 20);
     } else {
@@ -70,7 +71,7 @@ export default function BillsFeed() {
         <Badge
           onClick={() =>
             setFilters(
-              filters.status === "Introduced" ? {} : { status: "Introduced" }
+              filters.status === "Introduced" ? {} : { status: "Introduced" },
             )
           }
           className={`cursor-pointer ${

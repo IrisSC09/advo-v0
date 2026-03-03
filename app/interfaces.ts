@@ -207,3 +207,17 @@ export interface SearchResponse {
     total_pages: number
   }
 }
+export interface AuthModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  mode: "signin" | "signup";
+  onModeChange: (mode: "signin" | "signup") => void;
+}
+import type { User } from "@supabase/supabase-js"
+
+export interface AuthContextType {
+  user: User | null
+  profile: any | null
+  loading: boolean
+  signOut: () => Promise<void>
+}

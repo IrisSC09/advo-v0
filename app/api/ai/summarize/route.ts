@@ -4,29 +4,6 @@ import { generateBillSummary } from "@/lib/ai"
 const DAILY_LIMIT = 5
 const usageByUserDay = new Map<string, number>()
 
-function buildFallbackSummary(billText: string, billTitle: string) {
-  const cleaned = billText.replace(/\s+/g, " ").trim()
-  const preview = cleaned.slice(0, 600)
-  const sentences = preview
-    .split(/[.!?]+/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, 3)
-
-  return {
-    summary: sentences.length
-      ? sentences.join(". ") + "."
-      : `${billTitle} is currently available, but AI generation is temporarily unavailable.`,
-    keyPoints: [
-      "Review the bill text and status timeline for exact language.",
-      "Check sponsors, committee activity, and recent actions for context.",
-      "Use community threads to compare different interpretations.",
-    ],
-    impact: "Potential impact depends on implementation details and who is covered by the bill.",
-    controversialAspects: "No automated analysis available right now; review source text for debated clauses.",
-  }
-}
-
 export async function POST(request: Request) {
   try {
     const { billText, billTitle, userId } = await request.json()
@@ -51,10 +28,10 @@ export async function POST(request: Request) {
       )
     }
 
-    const summary = (await generateBillSummary(billText, billTitle)) || buildFallbackSummary(billText, billTitle)
+    const summary = (await generateBillSummary(billText, billTitle))
     usageByUserDay.set(usageKey, used + 1)
     return NextResponse.json({
-      ...summary,
+      summary,
       usage: {
         limit: DAILY_LIMIT,
         used: used + 1,

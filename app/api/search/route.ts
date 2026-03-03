@@ -1,27 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-
-interface SearchResult {
-  relevance: number
-  state: string
-  bill_number: string
-  bill_id: number
-  change_hash: string
-  url: string
-  text_url: string
-  research_url: string
-  last_action_date: string
-  last_action: string
-  title: string
-}
-
-interface SearchResponse {
-  results: SearchResult[]
-  summary: {
-    count: number
-    page: number
-    total_pages: number
-  }
-}
+import { SearchResponse } from "@/app/interfaces"
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams

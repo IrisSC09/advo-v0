@@ -15,8 +15,12 @@ import {
 import { Search, Filter, X, Calendar, User, Building } from "lucide-react";
 import Link from "next/link";
 import TakeActionModal from "@/components/take-action-modal";
-import { BillsResponse, SearchResult, SearchResponse, BillDetail } from "@/app/interfaces";
-import { getSubjectColor } from "../misc-functions";
+import {
+  BillsResponse,
+  SearchResult,
+  SearchResponse,
+  BillDetail,
+} from "@/app/interfaces";
 
 export default function LegislationPage() {
   const [bills, setBills] = useState<BillDetail[]>([]);
@@ -54,7 +58,9 @@ export default function LegislationPage() {
       });
       if (statusFilter !== "all") params.append("status", statusFilter);
 
-      const response = await fetch(`/api/bills?${params}`, { cache: "no-store" });
+      const response = await fetch(`/api/bills?${params}`, {
+        cache: "no-store",
+      });
       const data: BillsResponse = await response.json();
 
       const federalBills = data.bills.filter((bill) => bill.state === "US");
@@ -69,7 +75,9 @@ export default function LegislationPage() {
         });
       }
       setHasMore(data.hasMore);
-      setTotal(reset ? federalBills.length : (prev) => prev + federalBills.length);
+      setTotal(
+        reset ? federalBills.length : (prev) => prev + federalBills.length,
+      );
     } catch (error) {
       console.error("Error fetching bills:", error);
     } finally {
@@ -99,11 +107,16 @@ export default function LegislationPage() {
       } else {
         setSearchResults((prev) => {
           const ids = new Set(prev.map((r) => r.bill_id));
-          return [...prev, ...federalResults.filter((r) => !ids.has(r.bill_id))];
+          return [
+            ...prev,
+            ...federalResults.filter((r) => !ids.has(r.bill_id)),
+          ];
         });
       }
       setHasMore(pageNum < data.summary.total_pages);
-      setTotal(reset ? federalResults.length : (t) => t + federalResults.length);
+      setTotal(
+        reset ? federalResults.length : (t) => t + federalResults.length,
+      );
     } catch (error) {
       console.error("Error performing search:", error);
     } finally {
@@ -143,7 +156,7 @@ export default function LegislationPage() {
   const activeFiltersCount = [statusFilter].filter((f) => f !== "all").length;
   const displayItems = useMemo<BillDetail[]>(() => {
     if (!isSearchMode) return bills;
-  
+
     return searchResults.map((result) => ({
       bill_id: result.bill_id,
       title: result.title,
@@ -263,32 +276,36 @@ export default function LegislationPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {displayItems.map((bill) => (
             <Card
-                key={bill.bill_id}
-                className="bg-gray-900 border-gray-800 hover:border-advoline-orange transition-colors"
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2 justify-between mb-2">
-                    {/* Show sponsor party if available */}
-                    {bill.sponsors?.[0]?.party && (
-                      <Badge className={`${getPartyColor(bill.sponsors[0].party)} text-white text-xs`}>
-                        {bill.sponsors[0].party}
-                      </Badge>
-                    )}
-                    {/* Show first subject as primary topic */}
-                    {bill.subjects?.[0] && (
-                      <Badge className="bg-neon-purple text-white text-xs">{bill.subjects[0]}</Badge>
-                    )}
-                  </div>
-          
-              <CardTitle className="text-white text-lg font-bold leading-tight">
-                <Link
-                  href={`/bill/${bill.bill_id}`}
-                  className="hover:text-advoline-orange transition-colors"
-                >
-                  {bill.title}
-                </Link>
-              </CardTitle>
-            </CardHeader>
+              key={bill.bill_id}
+              className="bg-gray-900 border-gray-800 hover:border-advoline-orange transition-colors"
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2 justify-between mb-2">
+                  {/* Show sponsor party if available */}
+                  {bill.sponsors?.[0]?.party && (
+                    <Badge
+                      className={`${getPartyColor(bill.sponsors[0].party)} text-white text-xs`}
+                    >
+                      {bill.sponsors[0].party}
+                    </Badge>
+                  )}
+                  {/* Show first subject as primary topic */}
+                  {bill.subjects?.[0] && (
+                    <Badge className="bg-neon-purple text-white text-xs">
+                      {bill.subjects[0]}
+                    </Badge>
+                  )}
+                </div>
+
+                <CardTitle className="text-white text-lg font-bold leading-tight">
+                  <Link
+                    href={`/bill/${bill.bill_id}`}
+                    className="hover:text-advoline-orange transition-colors"
+                  >
+                    {bill.title}
+                  </Link>
+                </CardTitle>
+              </CardHeader>
 
               <CardContent>
                 <div className="flex items-center gap-4 mb-3 text-gray-400 text-sm">

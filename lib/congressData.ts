@@ -1,17 +1,8 @@
-export interface Bill {
-  bill_id: number;
-  title: string;
-  description: string;
-  introduced_date: string;
-  sponsor_name: string;
-  state: string;
-  bill_number: string;
-  status: string;
-}
+import { BillDetail } from "@/app/interfaces";
 
 const BASE_URL = "https://api.legiscan.com/?key=" + process.env.LEGISCAN_API_KEY;
 
-export async function fetchBills(page = 1, perPage = 20): Promise<Bill[]> {
+export async function fetchBills(page = 1, perPage = 20): Promise<BillDetail[]> {
   try {
     const res = await fetch(`${BASE_URL}&op=getMasterList&state=US&page=${page}`);
     if (!res.ok) throw new Error("Failed to fetch bills");
@@ -45,7 +36,7 @@ export async function fetchBills(page = 1, perPage = 20): Promise<Bill[]> {
   }
 }
 
-export async function searchBills(query: string, page = 1, perPage = 20): Promise<Bill[]> {
+export async function searchBills(query: string, page = 1, perPage = 20): Promise<BillDetail[]> {
   try {
     const res = await fetch(`${BASE_URL}&op=search&state=US&query=${encodeURIComponent(query)}&page=${page}`);
     if (!res.ok) throw new Error("Failed to search bills");
