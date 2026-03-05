@@ -534,7 +534,27 @@ export default function BillDetailPage() {
                             ))}
                           </ul>
                         </div>
+                        
+                        {aiSummary.impact && (
+                          <div>
+                            <h4 className="text-white font-semibold mb-2 flex items-center">
+                              <span className="text-purple-400 mr-2">💡</span>
+                              Potential Impact
+                            </h4>
+                            <p className="text-gray-300 leading-relaxed">{aiSummary.impact}</p>
+                          </div>
+                        )}
 
+                        {aiSummary.controversialAspects && (
+                          <div>
+                            <h4 className="text-white font-semibold mb-2 flex items-center">
+                              <span className="text-purple-400 mr-2">⚠️</span>
+                              Notable Aspects
+                            </h4>
+                            <p className="text-gray-300 leading-relaxed">{aiSummary.controversialAspects}</p>
+                          </div>
+                        )}
+                        
                         <div className="pt-2 border-t border-gray-700">
                           <p className="text-xs text-gray-500 flex items-center">
                             <Sparkles className="h-3 w-3 mr-1" />
